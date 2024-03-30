@@ -1,36 +1,78 @@
 import os
 import torch
-import logger
+from functools import partial
 
 CPU = torch.device('cpu')
 MPS = torch.device('mps')
 CUDA = torch.device('cuda')
 
-DEVICE = CPU
+def default_device(
+  logger,
+  rank,
+):
 
-# DEVICE
-if os.getenv('MPS', '0') == '1':
+  if torch.cuda.is_available():
 
-  assert torch.backends.mps.is_available() == True, 'MPS is not available'
+    logger.info('CUDA')
 
-  logger.info('[DEVICE] MPS')
+    torch.set_default_device(rank)
 
-  torch.set_default_device('mps')
+    # return CUDA
+    return torch.device(f'cuda:{rank}')
 
-  DEVICE = MPS
+  elif torch.backends.mps.is_available():
 
-elif os.getenv('CUDA', '0') == '1':
+    logger.info('MPS')
 
-  assert torch.cuda.is_available() == True, 'CUDA is not available'
+    torch.set_default_device('mps')
 
-  logger.info('[DEVICE] CUDA')
+    return MPS
 
-  torch.set_default_device('cuda')
+  else:
 
-  DEVICE = CUDA
+    logger.info('CPU')
 
-else:
+    return CPU
 
-  logger.info('[DEVICE] CPU')
+def init(
+  logger,
+  rank,
+):
 
-  DEVICE = CPU
+  logger = partial(logger, 'DEVICE')()
+
+  logger.debug('Init')
+
+  if os.getenv('MPS', '0') == '1':
+
+    assert torch.backends.mps.is_available() == True, 'MPS is not available'
+
+    logger.info('MPS')
+
+    torch.set_default_device('mps')
+
+    return MPS
+
+  elif os.getenv('CUDA', '0') == '1':
+
+    assert torch.cuda.is_available() == True, 'CUDA is not available'
+
+    logger.info('CUDA')
+
+    torch.set_default_device(rank)
+
+    return torch.device(f'cuda:{rank}')
+    # return rank
+
+  elif os.getenv('CPU', '0') == '1':
+
+    logger.info('CPU')
+
+    return CPU
+
+  else:
+
+    return default_device(
+      logger,
+      rank,
+    )

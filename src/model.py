@@ -244,3 +244,21 @@ def print_model(
   logger.info(f'[MODEL] Parameters (MB): {(parameters * 4 / 1024 ** 2):.6}')
   logger.info('[MODEL] Device:', next(model.parameters()).device)
   logger.debug('[MODEL] Architecture:', model)
+
+class UNet2(nn.Module):
+
+  def __init__(
+    self,
+  ):
+
+    super().__init__()
+
+    self.layer = nn.Linear(config.IMG_SIZE, config.IMG_SIZE, bias = False)
+
+  def forward(
+    self,
+    x,
+    y,
+  ):
+
+    return self.layer(x)

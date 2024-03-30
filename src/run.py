@@ -7,10 +7,15 @@ os.system('clear')
 import torch
 import config
 import device
-from scheduler import betas, sqrt_one_minus_alphas_cumprod, sqrt_recip_alphas, posterior_variance, get_values_at_timesteps
-from checkpoints import restore_weights
+# from scheduler import betas, sqrt_one_minus_alphas_cumprod, sqrt_recip_alphas, posterior_variance, get_values_at_timesteps
+from scheduler import get_values_at_timesteps
+# from checkpoints import restore_weights
+import checkpoints
 from model import UNet
 from plt import plt_images
+import wandb
+from logger import Logger
+from functools import partial
 
 @torch.no_grad()
 def sample_image_at_timestemp_minus_one(
@@ -18,6 +23,20 @@ def sample_image_at_timestemp_minus_one(
   images_at_timesteps, # x_t of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
   timestep, # t of (1)
 ):
+
+  # TODO: Get rid of duplication here and in scheduler; it is caused because we need to fix initialization due to multiple GPUs
+  betas = torch.linspace(
+    0.0001,
+    0.02,
+    config.T,
+  )
+  alphas = 1.0 - betas
+  alphas_cumprod = torch.cumprod(alphas, axis = 0)
+  alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.0)
+  sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
+  sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+  sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+  posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
   beta_t = get_values_at_timesteps(
     betas, # (T)
@@ -94,14 +113,46 @@ def sample_image(
 
   return images_at_timesteps
 
-model = UNet()
+def main():
 
-restore_weights(
-  model,
-)
+  _device = 'mps'
+  rank = 0
 
-model.eval()
+  _logger = partial(Logger, rank)
 
-images = sample_image(model)
+  model = UNet()
 
-plt_images(images)
+  wandb_group = os.getenv('RUN')
+
+  if wandb_group:
+
+    wandb.restore(
+      config.CHECKPOINT_PATH,
+      # run_path: str | None = None,
+      f'iharabukhouski/{config.WANDB_PROJECT}/{wandb_group}_0',
+      # replace: bool = False,
+      # root: str | None = None
+    )
+
+  run = checkpoints.init(
+    _logger,
+    wandb_group,
+    rank,
+  )
+
+  checkpoints.restore_weights(
+    _device,
+    rank,
+    run,
+    model,
+  )
+
+  model.eval()
+
+  images = sample_image(model)
+
+  plt_images(images)
+
+if __name__ == '__main__':
+
+  main()

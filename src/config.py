@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import wandb
+import torch
 
 load_dotenv()
 
@@ -11,6 +12,7 @@ WANDB_API_KEY = os.getenv('WANDB_API_KEY')
 assert WANDB_API_KEY is not None, '"WANDB_API_KEY" is required'
 
 WANDB_PROJECT = 'Test'
+# WANDB_GROUP = 'MyGroup'
 WANDB_RUN_ID = os.getenv('RUN', wandb.util.generate_id()) 
 WANDB_RESUME = 'allow' if WANDB_RUN_ID is not None else None
 # WANDB_RESUME = 'must' if WANDB_RUN_ID is not None else None
@@ -19,10 +21,24 @@ WANDB_NAME = WANDB_RUN_ID
 CHECKPOINT_PATH = 'checkpoint.tar'
 MODEL_ONNX_PATH = 'model.onnx'
 
+def default_number_of_gpus():
+
+  if torch.cuda.is_available():
+
+    return torch.cuda.device_count()
+
+  else:
+
+    return 1
+
+DEFAULT_NUMBER_OF_GPUS = default_number_of_gpus()
+NUMBER_OF_GPUS = int(os.getenv('GPU') or DEFAULT_NUMBER_OF_GPUS)
+
 ## Model
 T = 100 # number of steps
 TIMESTEP_EMBEDDING_DIMENTIONALITY = 32 # dimentionality of positional encodding of timesteps
 IMG_SIZE = 64
+# IMG_SIZE = 8
 IMG_CHANNELS = 3
 CHANNELS = (IMG_CHANNELS, 64, 128, 256, 512, 1024) # depth? / using filters & convolution
 # CHANNELS = (IMG_CHANNELS, 64, 128) # depth? / using filters & convolution
@@ -31,18 +47,27 @@ CHANNELS = (IMG_CHANNELS, 64, 128, 256, 512, 1024) # depth? / using filters & co
 DEFAULT_DATASET_SIZE = None
 DATASET_SIZE = int(os.getenv('DS', '0')) or DEFAULT_DATASET_SIZE
 # DATASET_SIZE = 1024
+DATASET_SIZE = None
 
 DEFAULT_BATCH_SIZE = 128
 BATCH_SIZE = int(os.getenv('BS') or DEFAULT_BATCH_SIZE)
 
 # NUMBER_OF_EPOCHS = 100
-NUMBER_OF_EPOCHS = 1
-LEARNING_RATE = 0.001
+DEFAULT_NUMBER_OF_EPOCHS = 1
+NUMBER_OF_EPOCHS = int(os.getenv('EPOCHS') or DEFAULT_NUMBER_OF_EPOCHS)
+LEARNING_RATE = 0.001 * NUMBER_OF_GPUS
+# LEARNING_RATE = 1
+
+LOG_EVERY = 5
 
 # PLATFORM
 
-import torch
+# import torch
 
-print('Torch Version:', torch.__version__)
+# print('Torch Version:', torch.__version__)
 
-torch.manual_seed(42)
+# torch.manual_seed(42)
+
+# NUM_OF_CPU = os. cpu_count()
+
+# print('CPU Count:', NUM_OF_CPU)

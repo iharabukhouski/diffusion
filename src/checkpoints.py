@@ -3,35 +3,58 @@ import torch
 import wandb
 import config
 import logger
-import device
+from functools import partial
+from collections import OrderedDict
+import re
 
-wandb.login(
-  key = config.WANDB_API_KEY,
-)
+def init(
+  _logger,
+  group,
+  rank,
+):
 
-wandb.init(
+  logger = partial(_logger, 'CHECKPOINT')()
 
-  project = config.WANDB_PROJECT,
+  logger.debug('Init')
 
-  # SEE: https://docs.wandb.ai/ref/python/init
-  # SEE: https://docs.wandb.ai/guides/runs/resuming
-  id = config.WANDB_RUN_ID,
-  resume = config.WANDB_RESUME,
-  name = config.WANDB_NAME,
+  # os.environ['WANDB_SILENT'] = 'true'
 
-  config = {
-    # Architecture
-    'T': config.T,
-    'IMG_SIZE': config.IMG_SIZE,
-    # Training
-    'LEARNING_RATE': config.LEARNING_RATE,
-    'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
-    'BATCH_SIZE': config.BATCH_SIZE,
-    'DATASET_SIZE': config.DATASET_SIZE,
-  },
-)
+  wandb.login(
+    key = config.WANDB_API_KEY,
+  )
+
+  run = wandb.init(
+
+    project = config.WANDB_PROJECT,
+
+    # group = config.WANDB_GROUP,
+    group = group,
+
+    # SEE: https://docs.wandb.ai/ref/python/init
+    # SEE: https://docs.wandb.ai/guides/runs/resuming
+    # id = config.WANDB_RUN_ID,
+    id = f'{group}_{rank}',
+    # resume = config.WANDB_RESUME,
+    resume = 'allow',
+    # name = config.WANDB_NAME,
+    name = f'{group}_{rank}',
+
+    config = {
+      # Architecture
+      'T': config.T,
+      'IMG_SIZE': config.IMG_SIZE,
+      # Training
+      'LEARNING_RATE': config.LEARNING_RATE,
+      'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
+      'BATCH_SIZE': config.BATCH_SIZE,
+      'DATASET_SIZE': config.DATASET_SIZE,
+    },
+  )
+
+  return run
 
 def save_weights(
+  run,
   model,
   optimizer,
   step,
@@ -53,12 +76,13 @@ def save_weights(
   )
 
   # Includes checkpoint in wandb run
-  wandb.save(
+  run.save(
     config.CHECKPOINT_PATH,
     # policy = 'now'
   )
 
 def save_architecture(
+  run,
   model,
 ):
 
@@ -80,37 +104,57 @@ def save_architecture(
   # onnx_program = torch.onnx.dynamo_export(model, x)
 
   # Adding ONNX file to wandb
-  wandb.save(
+  run.save(
     config.MODEL_ONNX_PATH,
   )
 
+import torch.distributed as dist
+
 def restore_weights(
+  _device,
+  rank,
+  run,
   model,
   optimizer = None,
 ):
 
-  if wandb.run.resumed:
+  if run.resumed:
 
-    logger.info('[CHECKPOINT] Downloading...')
+    # logger.info('[CHECKPOINT] Downloading...')
 
-    checkpoint_filehandler = wandb.restore(config.CHECKPOINT_PATH)
+    # checkpoint_filehandler = run.restore(config.CHECKPOINT_PATH)
 
-    logger.info('[CHECKPOINT] Downloaded')
+    # logger.info('[CHECKPOINT] Downloaded')
 
-    logger.info('[CHECKPOINT] Path', checkpoint_filehandler.name)
+    # logger.info('[CHECKPOINT] Path', checkpoint_filehandler.name)
 
     checkpoint = torch.load(
-      checkpoint_filehandler.name,
-      map_location = device.DEVICE,
+      # checkpoint_filehandler.name,
+      config.CHECKPOINT_PATH,
+      map_location = _device,
     )
     # checkpoint = torch.load('checkpoint.tar')
 
-    checkpoint_filehandler.close()
+    # checkpoint_filehandler.close()
 
     # TODO: wandb.save does not replace 'checkpoint.tar' if it already exists
-    os.remove(checkpoint_filehandler.name)
+    # os.remove(checkpoint_filehandler.name)
+
+    # print(checkpoint['model_state_dict'])
+
+    # state_dict = checkpoint['model_state_dict']
+
+    # model_dict = OrderedDict()
+    # pattern = re.compile('module.')
+    # for k,v in state_dict.items():
+
+    #   if re.search("module", k):
+    #       model_dict[re.sub(pattern, '', k)] = v
+    #   else:
+    #       model_dict = state_dict
 
     model.load_state_dict(checkpoint['model_state_dict'])
+    # model.load_state_dict(state_dict)
 
     logger.info('[CHECKPOINT] Model Restored')
 

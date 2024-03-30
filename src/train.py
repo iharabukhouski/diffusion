@@ -1,21 +1,23 @@
 #! /usr/bin/env python3
 
 import os
+import sys
 
-os.system('clear')
+# os.system('clear')
 
 import time
 import torch
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 import torch.nn.functional as F
-from data import create_dataloader, print_dataloader
+from data import create_dataloader
 import config
-import logger
+# import logger
+from logger import Logger
 import device
 import wandb
-from model import UNet, print_model
+from model import UNet, UNet2, print_model
 from scheduler import images_to_images_with_noise_at_timesteps
-from checkpoints import restore_weights, save_weights, save_architecture
+import checkpoints
 
 def calculate_loss(
   model,
@@ -40,29 +42,54 @@ def calculate_loss(
     noises_predicted,
   )
 
+# from torchtnt.utils.flops import FlopTensorDispatchMode
+# from flop_counter import FlopCounterMode
+
 def train(
+  logger,
+  _device,
+  run,
   dataloader,
   model,
   optimizer,
   step,
 ):
 
+  # logger.info('PARAM', next(model.parameters())[0][0])
+
+  # flop_counter = FlopCounterMode(model)
+
+  # with flop_counter:
+
+  # for p in model.parameters():
+
+  #   logger.info('INIT PRM', f'{p[0][0].item():.5f}')
+  #   logger.info('INIT GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+
   for epoch in range(config.NUMBER_OF_EPOCHS):
+
+    step_start = time.time()
+
+    dataloader.sampler.set_epoch(epoch)
 
     # images / x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
     for batch, (images, labels) in enumerate(dataloader):
 
-      optimizer.zero_grad()
+      # print('\n')
 
-      if device.DEVICE == device.MPS:
 
-        # NOTE: Due to MPS fallback???
-        images = images.to(device.MPS)
 
-      elif device.DEVICE == device.CUDA:
+      # for p in model.parameters():
 
-        # TODO: I do not know why we need it but without this the device is CPU on a machine with CUDA
-        images = images.to(device.CUDA)
+      #   logger.debug('1 PRM', f'{p[0][0].item():.5f}')
+      #   logger.debug('1 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+
+      compute_start = time.time()
+
+      optimizer.zero_grad() # sets .grad to None
+
+      # TODO: Can dataloader be configured in a way that the date is on the device by default?
+      images = images.to(_device)
 
       # timesteps of (BATCH_SIZE)
       timesteps = torch.randint(
@@ -74,6 +101,8 @@ def train(
         dtype = torch.int64,
       )
 
+      # with FlopTensorDispatchMode(model) as ftdm:
+
       loss = calculate_loss(
         model,
         images,
@@ -81,80 +110,251 @@ def train(
       )
       loss_number = loss.item()
 
-      loss.backward()
+        # print('FLOPS', ftdm.flop_counts)
 
-      optimizer.step()
+        # ftdm.reset()
 
-      # if batch % 10 == 0:
+      # for p in model.parameters():
 
-      logger.info(f'Step: {step:>4} | Epoch: {epoch:>4} | Batch: {batch:>4} | Loss: {loss_number}')
+      #   logger.debug('2 PRM', f'{p[0][0].item():.5f}')
+      #   logger.debug('2 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
-      # accuracy = 1
+      loss.backward() # calculates .grad
 
-      wandb.log(
+      # for p in model.parameters():
+
+      #   logger.debug('3 PRM', f'{p[0][0].item():.5f}')
+      #   logger.debug('3 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+
+
+      optimizer.step() # updates params
+
+      # for p in model.parameters():
+
+      #   logger.debug('4 PRM', f'{p[0][0].item():.5f}')
+      #   logger.debug('4 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+
+      run.log(
         {
-          # 'accuracy': accuracy,
           'loss': loss_number,
         },
         step = step,
       )
 
+      compute_end = time.time()
+
+      step_end = time.time()
+
+      if step % config.LOG_EVERY == 0:
+
+        logger.info(f'Step: {step:>4} | Epoch: {epoch:>4} | Batch: {batch:>4} | Loss: {loss_number:.4f} | Compute: {compute_end - compute_start:.4f}s | Step: {step_end - step_start:.4f}s')
+
+      step_start = time.time()
+
       step += 1
 
-    logger.info('Loss', loss_number)
+  # for p in model.parameters():
+
+  #   logger.info('FIN PRM', f'{p[0][0].item():.5f}')
+  #   logger.info('FIN GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
   return step, loss_number
 
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
 
-dataloader = create_dataloader()
+def setup(
+  rank,
+  world_size,
+):
 
-print_dataloader(dataloader)
+  # TODO: I need to compile torch from source on the machine that has MPI installed
+  dist.init_process_group(
+    # backend = dist.Backend.MPI,
+    rank = rank,
+    world_size = world_size,
+  )
 
-model = UNet()
+def cleanup():
 
-wandb.watch(
-  models = model,
-  log = 'all',
-  log_freq = 1,
-  log_graph = True,
-)
+  dist.destroy_process_group()
 
-print_model(model)
+from functools import partial
 
-optimizer = Adam(
-  model.parameters(),
-  lr = config.LEARNING_RATE,
-)
+# This code is executed `NUMBER_OF_GPUS` times
+def main(
+  rank,
+  world_size,
+  wandb_group,
+):
 
-step = restore_weights(
-  model,
-  optimizer,
-)
+  torch.manual_seed(rank)
 
-model.train()
+  _logger = partial(Logger, rank)
+  logger = partial(_logger, 'TRAIN')()
 
-start = time.time()
+  logger.debug('Init')
 
-step, loss_number = train(
-  dataloader,
-  model,
-  optimizer,
-  step,
-)
+  logger.info('PID', os.getpid())
 
-end = time.time()
+  _device = device.init(
+    _logger,
+    rank,
+  )
 
-logger.info('Wall Time (sec)', end - start)
+  # print('Process:', __name__)
 
-save_weights(
-  model,
-  optimizer,
-  step,
-  loss_number,
-)
+  # print('Torch Version:', torch.__version__)
 
-save_architecture(
-  model,
-)
+  # NUM_OF_CPU = os.cpu_count()
 
-wandb.finish()
+  # print('CPU Count:', NUM_OF_CPU)
+
+  run = checkpoints.init(
+    _logger,
+    wandb_group,
+    rank,
+  )
+  # run = None
+
+  setup(
+    rank,
+    world_size,
+  )
+
+  dataloader = create_dataloader(
+    _logger,
+    rank,
+    world_size,
+  )
+
+  model = UNet()
+  # model = UNet2()
+
+  # logger.info('MODEL DEVICE', model)
+
+  model = DDP(
+    model,
+    device_ids=[
+      rank,
+    ],
+    output_device = rank,
+    # find_unused_parameters = True,
+  )
+
+  # watch gradients only for rank 0
+  # if rank == 0:
+
+  #   run.watch(model)
+
+    # run.watch(
+    #   models = model,
+    #   log = 'all',
+    #   log_freq = 1,
+    #   log_graph = True,
+    # )
+
+  # print_model(model)
+
+  optimizer = Adam(
+  # optimizer = SGD(
+    model.parameters(),
+    lr = config.LEARNING_RATE,
+  )
+
+  step = checkpoints.restore_weights(
+    _device,
+    rank,
+    run,
+    model,
+    optimizer,
+  )
+  # step = 0
+
+  # dist.barrier()
+
+  model.train()
+
+  start = time.time()
+
+  step, loss_number = train(
+    logger,
+    _device,
+    run,
+    dataloader,
+    model,
+    optimizer,
+    step,
+  )
+
+  end = time.time()
+
+  logger.info(f'Step: {step}')
+  logger.info(f'Loss: {loss_number:.4f}')
+  logger.info(f'Time: {end - start:.4f}s')
+
+  if rank == 0:
+
+    # pass
+
+    checkpoints.save_weights(
+      run,
+      model,
+      optimizer,
+      step,
+      loss_number,
+    )
+
+    # save_architecture(
+    #   run,
+    #   model,
+    # )
+
+  run.finish()
+
+  cleanup()
+
+
+os.environ['MASTER_ADDR'] = 'localhost'
+os.environ['MASTER_PORT'] = '12355' # select any idle port on your machine
+
+# This file is executed `NUMBER_OF_GPUS + 1` times
+
+# This code is executed only once
+if __name__ == '__main__':
+
+  os.system('clear')
+
+  # wandb_group = wandb.util.generate_id()
+  wandb_group = os.getenv('RUN', wandb.util.generate_id())
+
+  print('PID Main', os.getpid(), sys.base_prefix)
+  print('RUN', wandb_group)
+
+  if os.getenv('RUN'):
+
+    wandb.restore(
+      config.CHECKPOINT_PATH,
+      # run_path: str | None = None,
+      f'iharabukhouski/{config.WANDB_PROJECT}/{wandb_group}_0',
+      # replace: bool = False,
+      # root: str | None = None
+    )
+
+  mp.spawn(
+    main,
+    args=(
+      config.NUMBER_OF_GPUS,
+      wandb_group,
+    ),
+    nprocs = config.NUMBER_OF_GPUS,
+    # join = True,
+  )
+
+
+# main(
+#   0,
+#   config.NUMBER_OF_GPUS,
+#   'abc'
+# )

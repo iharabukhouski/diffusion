@@ -3,18 +3,18 @@ import torch.nn.functional as F
 import config
 
 # Evenly spaced values from `start` to `end`
-betas = torch.linspace(
-  0.0001,
-  0.02,
-  config.T,
-)
-alphas = 1.0 - betas
-alphas_cumprod = torch.cumprod(alphas, axis = 0)
-alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.0)
-sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
-sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
-sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+# betas = torch.linspace(
+#   0.0001,
+#   0.02,
+#   config.T,
+# )
+# alphas = 1.0 - betas
+# alphas_cumprod = torch.cumprod(alphas, axis = 0)
+# alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.0)
+# sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
+# sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+# sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+# posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
 def get_values_at_timesteps(
   values_at_timesteps, # of (T)
@@ -39,6 +39,19 @@ def images_to_images_with_noise_at_timesteps(
   images, # x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
   timesteps, # t of (BATCH_SIZE)
 ):
+
+  betas = torch.linspace(
+    0.0001,
+    0.02,
+    config.T,
+  )
+  alphas = 1.0 - betas
+  alphas_cumprod = torch.cumprod(alphas, axis = 0)
+  alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.0)
+  sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
+  sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+  sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+  posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
   """
   Takes an image and a timestep as input and return the noisy version of it

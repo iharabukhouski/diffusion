@@ -33,7 +33,10 @@ def default_number_of_gpus():
     return 1
 
 DEFAULT_NUMBER_OF_GPUS = default_number_of_gpus()
-NUMBER_OF_GPUS = int(os.getenv('GPU') or DEFAULT_NUMBER_OF_GPUS)
+NUMBER_OF_GPUS = int(os.getenv('GPUS') or DEFAULT_NUMBER_OF_GPUS)
+
+DEFAULT_NUMBER_OF_CPUS = os.cpu_count()
+NUMBER_OF_CPUS = int(os.getenv('CPUS') or DEFAULT_NUMBER_OF_CPUS)
 
 ## Model
 T = 100 # number of steps

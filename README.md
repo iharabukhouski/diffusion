@@ -53,13 +53,15 @@ WANDB_API_KEY = <W&B API KEY>
 ## Envs
 - `MPS` - use mps device
 - `CUDA` - use cuda device
+- `CPU` - user cpu device
 - `RUN` - wandb run_id
 - `LOG` - 1 for debugging
 - `PERF` - 1 for performance
 - `BS` - batch size
 - `DS` - dataset size
 - `EPOCHS` - number of epochs
-- `GPU` - number of gpus
+- `GPUS` - number of gpus
+- `CPUS` - number of cpus
 
 # Training
 

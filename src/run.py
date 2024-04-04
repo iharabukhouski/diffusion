@@ -1,21 +1,17 @@
 #! /usr/bin/env python3
 
 import os
-
-os.system('clear')
-
 import torch
 import config
 import device
 # from scheduler import betas, sqrt_one_minus_alphas_cumprod, sqrt_recip_alphas, posterior_variance, get_values_at_timesteps
 from scheduler import get_values_at_timesteps
-# from checkpoints import restore_weights
 import checkpoints
 from model import UNet
 from plt import plt_images
-import wandb
 from logger import Logger
 from functools import partial
+import torch.nn.functional as F
 
 @torch.no_grad()
 def sample_image_at_timestemp_minus_one(
@@ -115,34 +111,36 @@ def sample_image(
 
 def main():
 
-  _device = 'mps'
   rank = 0
 
   _logger = partial(Logger, rank)
+  logger = partial(_logger, 'RUN')()
+
+  _device = device.init(
+    _logger,
+    rank,
+  )
 
   model = UNet()
 
-  wandb_group = os.getenv('RUN')
+  group_id = os.getenv('RUN')
 
-  if wandb_group:
+  if group_id:
 
-    wandb.restore(
-      config.CHECKPOINT_PATH,
-      # run_path: str | None = None,
-      f'iharabukhouski/{config.WANDB_PROJECT}/{wandb_group}_0',
-      # replace: bool = False,
-      # root: str | None = None
+    checkpoints.download_checkpoint(
+      logger,
+      group_id,
     )
 
   run = checkpoints.init(
     _logger,
-    wandb_group,
+    group_id,
     rank,
   )
 
-  checkpoints.restore_weights(
+  checkpoints.load_weights(
+    logger,
     _device,
-    rank,
     run,
     model,
   )
@@ -154,5 +152,7 @@ def main():
   plt_images(images)
 
 if __name__ == '__main__':
+
+  os.system('clear')
 
   main()

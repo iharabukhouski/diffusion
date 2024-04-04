@@ -263,9 +263,9 @@ def main(
     lr = config.LEARNING_RATE,
   )
 
-  step = checkpoints.restore_weights(
+  step = checkpoints.load_weights(
+    logger,
     _device,
-    rank,
     run,
     model,
     optimizer,
@@ -326,35 +326,27 @@ if __name__ == '__main__':
 
   os.system('clear')
 
-  # wandb_group = wandb.util.generate_id()
-  wandb_group = os.getenv('RUN', wandb.util.generate_id())
+  _logger = partial(Logger, -1)
+  logger = partial(_logger, 'MAIN')()
 
-  print('PID Main', os.getpid(), sys.base_prefix)
-  print('RUN', wandb_group)
+  group_id = os.getenv('RUN', wandb.util.generate_id())
+
+  logger.info('PID', os.getpid())
+  logger.info('RUN', group_id)
 
   if os.getenv('RUN'):
 
-    wandb.restore(
-      config.CHECKPOINT_PATH,
-      # run_path: str | None = None,
-      f'iharabukhouski/{config.WANDB_PROJECT}/{wandb_group}_0',
-      # replace: bool = False,
-      # root: str | None = None
+    checkpoints.download_checkpoint(
+      logger,
+      group_id,
     )
 
   mp.spawn(
     main,
     args=(
       config.NUMBER_OF_GPUS,
-      wandb_group,
+      group_id,
     ),
     nprocs = config.NUMBER_OF_GPUS,
-    # join = True,
+    join = True, # wait for child processes to complete
   )
-
-
-# main(
-#   0,
-#   config.NUMBER_OF_GPUS,
-#   'abc'
-# )

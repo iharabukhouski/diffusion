@@ -11,6 +11,7 @@ WANDB_API_KEY = os.getenv('WANDB_API_KEY')
 
 assert WANDB_API_KEY is not None, '"WANDB_API_KEY" is required'
 
+WANDB_USERNAME = 'iharabukhouski'
 WANDB_PROJECT = 'Test'
 # WANDB_GROUP = 'MyGroup'
 WANDB_RUN_ID = os.getenv('RUN', wandb.util.generate_id()) 

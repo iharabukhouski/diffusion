@@ -110,9 +110,34 @@ def save_architecture(
 
 import torch.distributed as dist
 
-def restore_weights(
+def download_checkpoint(
+  logger,
+  group,
+):
+
+  logger.info('Downloading...')
+
+  # checkpoint_filehandler = run.restore(config.CHECKPOINT_PATH)
+  wandb.restore(
+    config.CHECKPOINT_PATH,
+    # run_path: str | None = None,
+    f'{config.WANDB_USERNAME}/{config.WANDB_PROJECT}/{group}_0',
+    # replace: bool = False,
+    # root: str | None = None
+  )
+
+  # logger.info('Path', checkpoint_filehandler.name)
+
+  # checkpoint_filehandler.close()
+
+  # TODO: wandb.save does not replace 'checkpoint.tar' if it already exists
+  # os.remove(checkpoint_filehandler.name)
+
+  logger.info('Downloaded')
+
+def load_weights(
+  logger,
   _device,
-  rank,
   run,
   model,
   optimizer = None,
@@ -120,61 +145,52 @@ def restore_weights(
 
   if run.resumed:
 
-    # logger.info('[CHECKPOINT] Downloading...')
-
-    # checkpoint_filehandler = run.restore(config.CHECKPOINT_PATH)
-
-    # logger.info('[CHECKPOINT] Downloaded')
-
-    # logger.info('[CHECKPOINT] Path', checkpoint_filehandler.name)
-
     checkpoint = torch.load(
       # checkpoint_filehandler.name,
       config.CHECKPOINT_PATH,
       map_location = _device,
     )
-    # checkpoint = torch.load('checkpoint.tar')
 
-    # checkpoint_filehandler.close()
+    model.load_state_dict(ddp_checkpoint(checkpoint['model_state_dict']))
 
-    # TODO: wandb.save does not replace 'checkpoint.tar' if it already exists
-    # os.remove(checkpoint_filehandler.name)
-
-    # print(checkpoint['model_state_dict'])
-
-    # state_dict = checkpoint['model_state_dict']
-
-    # model_dict = OrderedDict()
-    # pattern = re.compile('module.')
-    # for k,v in state_dict.items():
-
-    #   if re.search("module", k):
-    #       model_dict[re.sub(pattern, '', k)] = v
-    #   else:
-    #       model_dict = state_dict
-
-    model.load_state_dict(checkpoint['model_state_dict'])
-    # model.load_state_dict(state_dict)
-
-    logger.info('[CHECKPOINT] Model Restored')
+    logger.info('Model Restored')
 
     if optimizer is not None:
 
       optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-      logger.info('[CHECKPOINT] Optimizer Restored')
+      logger.info('Optimizer Restored')
 
-    logger.info('[CHECKPOINT] Step', checkpoint['step'])
-    logger.info('[CHECKPOINT] Loss', checkpoint['loss'])
+    logger.info('Step', checkpoint['step'])
+    logger.info('Loss', checkpoint['loss'])
 
     return checkpoint['step']
 
   else:
 
-    logger.info('[CHECKPOINT] No Checkpoint')
+    logger.info('No Checkpoint')
 
     step = 0
 
-    logger.info('[CHECKPOINT] Step', step)
+    logger.info('Step', step)
 
     return step
+
+# DDP checkpoint to Non-DDP checkpoint
+def ddp_checkpoint(
+  state_dict,
+):
+
+  _state_dict = OrderedDict()
+  pattern = re.compile('module.')
+
+  for k, v in state_dict.items():
+
+    if re.search('module', k):
+
+        _state_dict[re.sub(pattern, '', k)] = v
+    else:
+
+        _state_dict[k] = v
+
+  return _state_dict

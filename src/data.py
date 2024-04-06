@@ -137,8 +137,7 @@ def create_dataloader(
     # generator = torch.Generator(device = device.DEVICE),
     # generator = torch.Generator(device = torch.device('mps')),
 
-    # TODO: Should something like NUM_OF_CPUS // NUM_OF_GPUS and round
-    num_workers = config.NUMBER_OF_CPUS // config.NUMBER_OF_GPUS,
+    num_workers = min(config.MAX_PROCESSES_PER_GPU, config.NUMBER_OF_CPUS // config.NUMBER_OF_GPUS),
     # num_workers = 2,
     # num_workers = 1,
     # num_workers = 0,

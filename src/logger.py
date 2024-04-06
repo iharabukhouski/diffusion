@@ -40,7 +40,7 @@ class Logger:
 
     # TODO: only if log level is 0
 
-    print(f'[E] [{self.namespace}:{self.rank}]', *args)
+    print(f'[E] [{self.namespace}{self.repr_rank()}]', *args)
 
   def info(
     self,
@@ -49,7 +49,7 @@ class Logger:
 
     # TODO: only if log level is 1; default log level should be 1
 
-    print(f'[I] [{self.namespace}:{self.rank}]', *args)
+    print(f'[I] [{self.namespace}{self.repr_rank()}]', *args)
 
   def debug(
     self,
@@ -60,4 +60,12 @@ class Logger:
 
     if int(os.getenv('LOG', '0')) >= 1:
 
-      print(f'[D] [{self.namespace}:{self.rank}]', *args)
+      
+
+      print(f'[D] [{self.namespace}{self.repr_rank()}]', *args)
+
+  def repr_rank(
+    self,
+  ):
+
+    return f':{self.rank}' if self.rank is not None else ''

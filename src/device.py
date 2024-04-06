@@ -39,7 +39,7 @@ def init(
   rank,
 ):
 
-  logger = partial(logger, 'DEVICE')()
+  logger = logger('DEVICE')
 
   logger.debug('Init')
 
@@ -62,7 +62,6 @@ def init(
     torch.set_default_device(rank)
 
     return torch.device(f'cuda:{rank}')
-    # return rank
 
   elif os.getenv('CPU', '0') == '1':
 
@@ -76,3 +75,13 @@ def init(
       logger,
       rank,
     )
+
+
+# TODO: Implement
+def is_cuda(
+  device,
+):
+
+  print(device)
+
+  return False

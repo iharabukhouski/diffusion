@@ -1,23 +1,20 @@
 #! /usr/bin/env python3
 
 import os
-import sys
-
-# os.system('clear')
 
 import time
 import torch
-from torch.optim import Adam, SGD
+from torch.optim import Adam
 import torch.nn.functional as F
 from data import create_dataloader
 import config
-# import logger
 from logger import Logger
-import device
+import device as Device
 import wandb
-from model import UNet, UNet2, print_model
+from model import UNet
 from scheduler import images_to_images_with_noise_at_timesteps
 import checkpoints
+from distributed import Distributed
 
 def calculate_loss(
   model,
@@ -134,12 +131,14 @@ def train(
       #   logger.debug('4 PRM', f'{p[0][0].item():.5f}')
       #   logger.debug('4 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
-      run.log(
-        {
-          'loss': loss_number,
-        },
-        step = step,
-      )
+      if config.WANDB:
+
+        run.log(
+          {
+            'loss': loss_number,
+          },
+          step = step,
+        )
 
       compute_end = time.time()
 
@@ -160,193 +159,169 @@ def train(
 
   return step, loss_number
 
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-
-def setup(
-  rank,
-  world_size,
-):
-
-  # TODO: I need to compile torch from source on the machine that has MPI installed
-  dist.init_process_group(
-    # backend = dist.Backend.MPI,
-    rank = rank,
-    world_size = world_size,
-  )
-
-def cleanup():
-
-  dist.destroy_process_group()
 
 from functools import partial
 
 # This code is executed `NUMBER_OF_GPUS` times
-def main(
-  rank,
-  world_size,
-  wandb_group,
-):
+def main():
 
-  torch.manual_seed(rank)
+  global_rank = os.getenv('RANK')
+  group_rank = os.getenv('GROUP_RANK')
+  local_rank = os.getenv('LOCAL_RANK')
+  world_size = os.getenv('WORLD_SIZE')
 
-  _logger = partial(Logger, rank)
-  logger = partial(_logger, 'TRAIN')()
+  # TODO: We need to have the same RUN for all processes
+  group_id = os.getenv('RUN') # wandb.util.generate_id()
+
+  torch.manual_seed(global_rank)
+
+  _logger = partial(Logger, global_rank)
+  logger = _logger('TRAIN')
 
   logger.debug('Init')
+  logger.debug('PID', os.getpid())
 
-  logger.info('PID', os.getpid())
+  logger.debug('Global Rank', global_rank)
+  logger.debug('Group Rank', group_rank)
+  logger.debug('Local Rank', local_rank)
+  logger.debug('World Size', world_size)
 
-  _device = device.init(
+  device = Device.init(
     _logger,
-    rank,
+    local_rank,
   )
-
-  # print('Process:', __name__)
-
-  # print('Torch Version:', torch.__version__)
-
-  # NUM_OF_CPU = os.cpu_count()
-
-  # print('CPU Count:', NUM_OF_CPU)
 
   run = checkpoints.init(
     _logger,
-    wandb_group,
-    rank,
-  )
-  # run = None
-
-  setup(
-    rank,
-    world_size,
+    group_id,
+    global_rank,
   )
 
-  dataloader = create_dataloader(
+  distributed = Distributed(
     _logger,
-    rank,
-    world_size,
+    device,
   )
 
-  model = UNet()
-  # model = UNet2()
+  # if local_rank == 0 and os.getenv('RUN') and config.WANDB:
 
-  # logger.info('MODEL DEVICE', model)
-
-  model = DDP(
-    model,
-    device_ids=[
-      rank,
-    ],
-    output_device = rank,
-    # find_unused_parameters = True,
-  )
-
-  # watch gradients only for rank 0
-  # if rank == 0:
-
-  #   run.watch(model)
-
-    # run.watch(
-    #   models = model,
-    #   log = 'all',
-    #   log_freq = 1,
-    #   log_graph = True,
-    # )
-
-  # print_model(model)
-
-  optimizer = Adam(
-  # optimizer = SGD(
-    model.parameters(),
-    lr = config.LEARNING_RATE,
-  )
-
-  step = checkpoints.load_weights(
-    logger,
-    _device,
-    run,
-    model,
-    optimizer,
-  )
-  # step = 0
+  #   checkpoints.download_checkpoint(
+  #     logger,
+  #     group_id,
+  #   )
 
   # dist.barrier()
 
-  model.train()
+  # dataloader = create_dataloader(
+  #   _logger,
+  #   local_rank,
+  #   world_size,
+  # )
 
-  start = time.time()
+  # model = UNet()
 
-  step, loss_number = train(
-    logger,
-    _device,
-    run,
-    dataloader,
-    model,
-    optimizer,
-    step,
-  )
+  # model = DDP(
+  #   model,
+  #   # device_ids=[
+  #   #   rank,
+  #   # ],
+  #   # output_device = rank,
+  #   # find_unused_parameters = True,
+  # )
 
-  end = time.time()
+  # # watch gradients only for rank 0
+  # # if rank == 0:
 
-  logger.info(f'Step: {step}')
-  logger.info(f'Loss: {loss_number:.4f}')
-  logger.info(f'Time: {end - start:.4f}s')
+  # #   run.watch(model)
 
-  if rank == 0:
+  #   # run.watch(
+  #   #   models = model,
+  #   #   log = 'all',
+  #   #   log_freq = 1,
+  #   #   log_graph = True,
+  #   # )
 
-    # pass
+  # optimizer = Adam(
+  #   model.parameters(),
+  #   lr = config.LEARNING_RATE,
+  # )
 
-    checkpoints.save_weights(
-      run,
-      model,
-      optimizer,
-      step,
-      loss_number,
-    )
+  # step = checkpoints.load_weights(
+  #   logger,
+  #   device,
+  #   run,
+  #   model,
+  #   optimizer,
+  # )
 
-    # save_architecture(
-    #   run,
-    #   model,
-    # )
+  # model.train()
 
-  run.finish()
+  # start = time.time()
 
-  cleanup()
+  # step, loss_number = train(
+  #   logger,
+  #   device,
+  #   run,
+  #   dataloader,
+  #   model,
+  #   optimizer,
+  #   step,
+  # )
 
+  # end = time.time()
 
-os.environ['MASTER_ADDR'] = 'localhost'
-os.environ['MASTER_PORT'] = '12355' # select any idle port on your machine
+  # logger.info(f'Step: {step}')
+  # logger.info(f'Loss: {loss_number:.4f}')
+  # logger.info(f'Time: {end - start:.4f}s')
 
-# This file is executed `NUMBER_OF_GPUS + 1` times
+  # if local_rank == 0:
 
-# This code is executed only once
-if __name__ == '__main__':
+  #   checkpoints.save_weights(
+  #     logger,
+  #     run,
+  #     model,
+  #     optimizer,
+  #     step,
+  #     loss_number,
+  #   )
 
-  os.system('clear')
+  #   # save_architecture(
+  #   #   run,
+  #   #   model,
+  #   # )
 
-  _logger = partial(Logger, -1)
-  logger = partial(_logger, 'MAIN')()
+  # # TODO: we need a class
+  # if config.WANDB:
 
-  group_id = os.getenv('RUN', wandb.util.generate_id())
+  #   run.finish()
 
-  logger.info('PID', os.getpid())
-  logger.info('RUN', group_id)
+  # wait for worker 0 to save checkpoints
+  # dist.barrier()
 
-  if os.getenv('RUN'):
+  distributed.destroy()
 
-    checkpoints.download_checkpoint(
-      logger,
-      group_id,
-    )
+def is_parent_process():
 
-  mp.spawn(
-    main,
-    args=(
-      config.NUMBER_OF_GPUS,
-      group_id,
-    ),
-    nprocs = config.NUMBER_OF_GPUS,
-    join = True, # wait for child processes to complete
-  )
+  return __name__ == '__main__'
+
+if is_parent_process():
+
+  # os.system('clear')
+
+  main()
+
+"""
+
+NCCL_DEBUG=WARN \
+TORCH_CPP_LOG_LEVEL=INFO \
+TORCH_DISTRIBUTED_DEBUG=DETAIL \
+LOG=1 \
+WANDB=0 \
+torchrun \
+--nnodes=1 \
+--nproc_per_node=1 \
+--node_rank=0 \
+--master_addr=localhost \
+--master_port=40723 \
+./train.py
+
+"""

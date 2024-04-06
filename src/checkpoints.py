@@ -15,45 +15,54 @@ def init(
 
   logger = partial(_logger, 'CHECKPOINT')()
 
-  logger.debug('Init')
+  if config.WANDB:
 
-  # os.environ['WANDB_SILENT'] = 'true'
+    logger.debug('Init')
 
-  wandb.login(
-    key = config.WANDB_API_KEY,
-  )
+    # os.environ['WANDB_SILENT'] = 'true'
 
-  run = wandb.init(
+    wandb.login(
+      key = config.WANDB_API_KEY,
+    )
 
-    project = config.WANDB_PROJECT,
+    run = wandb.init(
 
-    # group = config.WANDB_GROUP,
-    group = group,
+      project = config.WANDB_PROJECT,
 
-    # SEE: https://docs.wandb.ai/ref/python/init
-    # SEE: https://docs.wandb.ai/guides/runs/resuming
-    # id = config.WANDB_RUN_ID,
-    id = f'{group}_{rank}',
-    # resume = config.WANDB_RESUME,
-    resume = 'allow',
-    # name = config.WANDB_NAME,
-    name = f'{group}_{rank}',
+      # group = config.WANDB_GROUP,
+      group = group,
 
-    config = {
-      # Architecture
-      'T': config.T,
-      'IMG_SIZE': config.IMG_SIZE,
-      # Training
-      'LEARNING_RATE': config.LEARNING_RATE,
-      'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
-      'BATCH_SIZE': config.BATCH_SIZE,
-      'DATASET_SIZE': config.DATASET_SIZE,
-    },
-  )
+      # SEE: https://docs.wandb.ai/ref/python/init
+      # SEE: https://docs.wandb.ai/guides/runs/resuming
+      # id = config.WANDB_RUN_ID,
+      id = f'{group}_{rank}',
+      # resume = config.WANDB_RESUME,
+      resume = 'allow',
+      # name = config.WANDB_NAME,
+      name = f'{group}_{rank}',
 
-  return run
+      config = {
+        # Architecture
+        'T': config.T,
+        'IMG_SIZE': config.IMG_SIZE,
+        # Training
+        'LEARNING_RATE': config.LEARNING_RATE,
+        'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
+        'BATCH_SIZE': config.BATCH_SIZE,
+        'DATASET_SIZE': config.DATASET_SIZE,
+      },
+    )
+
+    return run
+
+  else:
+
+    logger.info('WANDB Disabled')
+
+    return None
 
 def save_weights(
+  logger,
   run,
   model,
   optimizer,
@@ -61,25 +70,31 @@ def save_weights(
   loss,
 ):
 
-  logger.info('[CHECKPOINT] Save Weights: Step', step)
-  logger.info('[CHECKPOINT] Save Weights: Loss', loss)
+  if config.WANDB:
 
-  # Create checkpoint
-  torch.save(
-    {
-      'model_state_dict': model.state_dict(),
-      'optimizer_state_dict': optimizer.state_dict(),
-      'step': step,
-      'loss': loss,
-    },
-    config.CHECKPOINT_PATH,
-  )
+    logger.info('Save Weights: Step', step)
+    logger.info('Save Weights: Loss', loss)
 
-  # Includes checkpoint in wandb run
-  run.save(
-    config.CHECKPOINT_PATH,
-    # policy = 'now'
-  )
+    # Create checkpoint
+    torch.save(
+      {
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'step': step,
+        'loss': loss,
+      },
+      config.CHECKPOINT_PATH,
+    )
+
+    # Includes checkpoint in wandb run
+    run.save(
+      config.CHECKPOINT_PATH,
+      # policy = 'now'
+    )
+
+  else:
+
+    logger.info('Saving Weights Disabled')
 
 def save_architecture(
   run,
@@ -143,36 +158,46 @@ def load_weights(
   optimizer = None,
 ):
 
-  if run.resumed:
+  if config.WANDB:
 
-    checkpoint = torch.load(
-      # checkpoint_filehandler.name,
-      config.CHECKPOINT_PATH,
-      map_location = _device,
-    )
+    if run.resumed:
 
-    model.load_state_dict(ddp_checkpoint(checkpoint['model_state_dict']))
+      checkpoint = torch.load(
+        # checkpoint_filehandler.name,
+        config.CHECKPOINT_PATH,
+        map_location = _device,
+      )
 
-    logger.info('Model Restored')
+      model.load_state_dict(ddp_checkpoint(checkpoint['model_state_dict']))
 
-    if optimizer is not None:
+      logger.info('Model Restored')
 
-      optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+      if optimizer is not None:
 
-      logger.info('Optimizer Restored')
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-    logger.info('Step', checkpoint['step'])
-    logger.info('Loss', checkpoint['loss'])
+        logger.info('Optimizer Restored')
 
-    return checkpoint['step']
+      logger.info('Step', checkpoint['step'])
+      logger.info('Loss', checkpoint['loss'])
+
+      return checkpoint['step']
+
+    else:
+
+      logger.info('No Checkpoint')
+
+      step = 0
+
+      logger.info('Step', step)
+
+      return step
 
   else:
 
-    logger.info('No Checkpoint')
+    logger.info('Loading Weights Disabled')
 
     step = 0
-
-    logger.info('Step', step)
 
     return step
 

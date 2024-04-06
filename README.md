@@ -10,6 +10,8 @@
 - [Inference](#inference)
 - [Profiling](#profiling)
 - [FLOPS Counter](#flops-counter)
+- [Lambda Labs](#lambda-labs)
+  - [Bandwidth](#bandwidth)
 
 # Dataset
 
@@ -83,3 +85,9 @@ MPS=1 RUN=<WANDB_RUN_ID> ./run.py
 https://pytorch.org/tnt/stable/utils/generated/torchtnt.utils.flops.FlopTensorDispatchMode.html
 https://pastebin.com/AkvAyJBw
 https://gist.github.com/soumith/5f81c3d40d41bb9d08041431c656b233
+
+# Lambda Labs
+
+## Bandwidth
+
+https://beta-docs.lambdalabs.com/cloud/network-bandwidth

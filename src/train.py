@@ -14,6 +14,7 @@ import wandb
 from model import UNet
 from scheduler import images_to_images_with_noise_at_timesteps
 import checkpoints
+from checkpoints import Checkpoint
 from distributed import Distributed
 
 def calculate_loss(
@@ -162,6 +163,18 @@ def train(
 
 from functools import partial
 
+def is_first_global_gpu():
+
+  global_rank = os.getenv('RANK')
+
+  return global_rank == 0
+
+def is_first_local_gpu():
+
+  local_rank = os.getenv('LOCAL_RANK')
+
+  return local_rank == 0
+
 # This code is executed `NUMBER_OF_GPUS` times
 def main():
 
@@ -169,9 +182,6 @@ def main():
   group_rank = os.getenv('GROUP_RANK')
   local_rank = os.getenv('LOCAL_RANK')
   world_size = os.getenv('WORLD_SIZE')
-
-  # TODO: We need to have the same RUN for all processes
-  group_id = os.getenv('RUN') # wandb.util.generate_id()
 
   torch.manual_seed(global_rank)
 
@@ -191,9 +201,9 @@ def main():
     local_rank,
   )
 
-  run = checkpoints.init(
+  run = Checkpoint(
     _logger,
-    group_id,
+    device,
     global_rank,
   )
 
@@ -202,14 +212,11 @@ def main():
     device,
   )
 
-  # if local_rank == 0 and os.getenv('RUN') and config.WANDB:
+  if is_first_local_gpu():
 
-  #   checkpoints.download_checkpoint(
-  #     logger,
-  #     group_id,
-  #   )
+    run.download_checkpoint()
 
-  # dist.barrier()
+  distributed.barrier()
 
   # dataloader = create_dataloader(
   #   _logger,
@@ -245,13 +252,10 @@ def main():
   #   lr = config.LEARNING_RATE,
   # )
 
-  # step = checkpoints.load_weights(
-  #   logger,
-  #   device,
-  #   run,
-  #   model,
-  #   optimizer,
-  # )
+  step = run.load_weights(
+    model,
+    optimizer,
+  )
 
   # model.train()
 
@@ -273,29 +277,24 @@ def main():
   # logger.info(f'Loss: {loss_number:.4f}')
   # logger.info(f'Time: {end - start:.4f}s')
 
-  # if local_rank == 0:
+  if is_first_local_gpu:
 
-  #   checkpoints.save_weights(
-  #     logger,
-  #     run,
-  #     model,
-  #     optimizer,
-  #     step,
-  #     loss_number,
-  #   )
+    run.save_weights(
+      model,
+      optimizer,
+      step,
+      loss_number,
+    )
 
-  #   # save_architecture(
-  #   #   run,
-  #   #   model,
-  #   # )
+    run.save_architecture(
+      run,
+      model,
+    )
 
-  # # TODO: we need a class
-  # if config.WANDB:
-
-  #   run.finish()
+  run.destroy()
 
   # wait for worker 0 to save checkpoints
-  # dist.barrier()
+  distributed.barrier()
 
   distributed.destroy()
 

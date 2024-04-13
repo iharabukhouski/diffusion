@@ -6,7 +6,7 @@ import config
 import device
 # from scheduler import betas, sqrt_one_minus_alphas_cumprod, sqrt_recip_alphas, posterior_variance, get_values_at_timesteps
 from scheduler import get_values_at_timesteps
-import checkpoints
+from checkpoints import Checkpoint
 from model import UNet
 from plt import plt_images
 from logger import Logger
@@ -114,7 +114,6 @@ def main():
   rank = 0
 
   _logger = partial(Logger, rank)
-  logger = partial(_logger, 'RUN')()
 
   _device = device.init(
     _logger,
@@ -123,25 +122,15 @@ def main():
 
   model = UNet()
 
-  group_id = os.getenv('RUN')
-
-  if group_id:
-
-    checkpoints.download_checkpoint(
-      logger,
-      group_id,
-    )
-
-  run = checkpoints.init(
+  run = Checkpoint(
     _logger,
-    group_id,
+    _device,
     rank,
   )
 
-  checkpoints.load_weights(
-    logger,
-    _device,
-    run,
+  run.download_checkpoint()
+
+  run.load_weights(
     model,
   )
 

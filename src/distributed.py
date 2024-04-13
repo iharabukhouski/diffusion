@@ -29,6 +29,12 @@ class Distributed:
 
     self.logger.debug('Init Finish')
 
+  def barrier(
+    self,
+  ):
+
+    dist.barrier()
+
   def destroy(
     self,
   ):

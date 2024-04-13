@@ -2,7 +2,6 @@ import os
 import torch
 import wandb
 import config
-import logger
 from collections import OrderedDict
 import re
 
@@ -38,48 +37,50 @@ class Checkpoint:
 
     if not config.WANDB:
 
-      logger.info('WANDB Disabled')
+      self.logger.info('WANDB Disabled')
 
-    # TODO: We need to have the same RUN for all processes
-    self.run_id = os.getenv('RUN') # wandb.util.generate_id()
+    else:
 
-    self.device = device
+      # TODO: We need to have the same RUN for all processes
+      self.run_id = os.getenv('RUN') # wandb.util.generate_id()
 
-    logger.debug('Init')
+      self.device = device
 
-    # os.environ['WANDB_SILENT'] = 'true'
+      self.logger.debug('Init')
 
-    wandb.login(
-      key = config.WANDB_API_KEY,
-    )
+      # os.environ['WANDB_SILENT'] = 'true'
 
-    self.run = wandb.init(
+      wandb.login(
+        key = config.WANDB_API_KEY,
+      )
 
-      project = config.WANDB_PROJECT,
+      self.run = wandb.init(
 
-      # group = config.WANDB_GROUP,
-      group = self.run_id,
+        project = config.WANDB_PROJECT,
 
-      # SEE: https://docs.wandb.ai/ref/python/init
-      # SEE: https://docs.wandb.ai/guides/runs/resuming
-      # id = config.WANDB_RUN_ID,
-      id = f'{self.run_id}_{rank}',
-      # resume = config.WANDB_RESUME,
-      resume = 'allow',
-      # name = config.WANDB_NAME,
-      name = f'{self.run_id}_{rank}',
+        # group = config.WANDB_GROUP,
+        group = self.run_id,
 
-      config = {
-        # Architecture
-        'T': config.T,
-        'IMG_SIZE': config.IMG_SIZE,
-        # Training
-        'LEARNING_RATE': config.LEARNING_RATE,
-        'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
-        'BATCH_SIZE': config.BATCH_SIZE,
-        'DATASET_SIZE': config.DATASET_SIZE,
-      },
-    )
+        # SEE: https://docs.wandb.ai/ref/python/init
+        # SEE: https://docs.wandb.ai/guides/runs/resuming
+        # id = config.WANDB_RUN_ID,
+        id = f'{self.run_id}_{rank}',
+        # resume = config.WANDB_RESUME,
+        resume = 'allow',
+        # name = config.WANDB_NAME,
+        name = f'{self.run_id}_{rank}',
+
+        config = {
+          # Architecture
+          'T': config.T,
+          'IMG_SIZE': config.IMG_SIZE,
+          # Training
+          'LEARNING_RATE': config.LEARNING_RATE,
+          'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
+          'BATCH_SIZE': config.BATCH_SIZE,
+          'DATASET_SIZE': config.DATASET_SIZE,
+        },
+      )
 
   def save_weights(
     self,
@@ -188,7 +189,7 @@ class Checkpoint:
 
     if not config.WANDB:
 
-      logger.debug('WANDB disabled')
+      self.logger.debug('WANDB disabled')
 
       return default_step
     
@@ -201,7 +202,7 @@ class Checkpoint:
     checkpoint = torch.load(
       # checkpoint_filehandler.name,
       config.CHECKPOINT_PATH,
-      map_location = self._device,
+      map_location = self.device._device,
     )
 
     model.load_state_dict(ddp_checkpoint(checkpoint['model_state_dict']))
@@ -222,6 +223,7 @@ class Checkpoint:
   def log(
     self,
     *args,
+    **kwargs,
   ):
 
     if not config.WANDB:
@@ -230,7 +232,10 @@ class Checkpoint:
 
     else:
 
-      self.run.log(*args)
+      self.run.log(
+        *args,
+        **kwargs,
+      )
 
   def destroy(
     self,

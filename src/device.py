@@ -53,7 +53,7 @@ class Device:
 
       torch.set_default_device('mps')
 
-      return MPS
+      self._device = MPS
 
     elif os.getenv('CUDA', '0') == '1':
 
@@ -63,27 +63,23 @@ class Device:
 
       torch.set_default_device(rank)
 
-      return torch.device(f'cuda:{rank}')
+      self._device = torch.device(f'cuda:{rank}')
 
     elif os.getenv('CPU', '0') == '1':
 
       self.logger.info('CPU')
 
-      return CPU
+      self._device = CPU
 
     else:
 
-      return default_device(
+      self._device = default_device(
         self.logger,
         rank,
       )
 
-  # TODO: Implement
   def is_cuda(
     self,
-    device,
   ):
 
-    print(device)
-
-    return False
+    return self._device.type.startswith('cuda')

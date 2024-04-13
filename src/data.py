@@ -1,57 +1,77 @@
 import torch
 from torch.utils.data import DataLoader, SubsetRandomSampler, Subset
-from torchvision import transforms, datasets
+from torchvision import transforms
 import numpy as np
 import config
-import logger
-import device
 from torch.utils.data.distributed import DistributedSampler
-from functools import partial
 from stanford_cars import create_dataset
 from anime import AnimeDataset
 
 class MultiEpochsDataLoader(torch.utils.data.DataLoader):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+      self,
+      *args,
+      **kwargs,
+    ):
+
         super().__init__(*args, **kwargs)
+
         self._DataLoader__initialized = False
         self.batch_sampler = _RepeatSampler(self.batch_sampler)
         self._DataLoader__initialized = True
         self.iterator = super().__iter__()
 
     def __len__(self):
+
         return len(self.batch_sampler.sampler)
 
     def __iter__(self):
+
         for i in range(len(self)):
+
             yield next(self.iterator)
 
 
 class _RepeatSampler(object):
+
     """ Sampler that repeats forever.
     Args:
         sampler (Sampler)
     """
 
-    def __init__(self, sampler):
+    def __init__(
+      self,
+      sampler,
+    ):
+
         self.sampler = sampler
 
-    def __iter__(self):
+    def __iter__(
+      self,
+    ):
+
         while True:
+
             yield from iter(self.sampler)
 
 def create_dataloader(
   _logger,
+  device,
   rank,
   world_size,
 ):
 
-  logger = partial(_logger, 'DATA')()
+  logger = _logger('DATA')
 
   logger.debug('Init')
 
   # dataset = create_dataset()
-  dataset = AnimeDataset()
+  dataset = AnimeDataset(
+    _logger,
+    path = config.ANIME_DATASET_PATH,
+    device = device,
+  )
 
   _indices = list(range(len(dataset)))
   indices = _indices if config.DATASET_SIZE is None else _indices[:config.DATASET_SIZE]
@@ -65,8 +85,6 @@ def create_dataloader(
     rank = rank,
     shuffle = False,
     # shuffle = True, # TODO: fails on MPS with "RuntimeError: Expected a 'mps:0' generator device but found 'cpu'"
-
-    
 
     # drop_last = False,
     drop_last = True,
@@ -103,13 +121,8 @@ def create_dataloader(
     # multiprocessing_context='fork' if device.DEVICE == device.MPS else 'spawn' if device.DEVICE == device.CUDA else None
     multiprocessing_context='spawn', #TODO: should be removed
 
-    persistent_workers=True
+    persistent_workers=True,
   )
-
-  # print_dataloader(
-  #   logger,
-  #   dataloader,
-  # )
 
   return dataloader
 

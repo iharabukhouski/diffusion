@@ -69,3 +69,6 @@ LOG_EVERY = 5
 
 # Data
 MAX_PROCESSES_PER_GPU = 4
+
+# Anime Dataset
+ANIME_DATASET_PATH = os.path.join('../data', 'anime.safetensors')

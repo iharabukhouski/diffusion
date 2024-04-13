@@ -1,7 +1,13 @@
 import torch.distributed as dist
-import device as Device
 
 class Distributed:
+
+  """
+
+  GLOO - supports only CPU
+  NCCL - supports only CUDA
+
+  """
 
   def __init__(
     self,
@@ -21,7 +27,7 @@ class Distributed:
 
     # TODO: I need to compile torch from source on the machine that has MPI installed
     # NOTE: NCCL not supported on macos
-    backend = dist.Backend.NCCL if Device.is_cuda(device) else dist.Backend.GLOO
+    backend = dist.Backend.NCCL if device.is_cuda() else dist.Backend.GLOO
 
     dist.init_process_group(
       backend = backend

@@ -45,7 +45,7 @@ def calculate_loss(
 
 def train(
   logger,
-  _device,
+  device,
   run,
   dataloader,
   model,
@@ -68,10 +68,11 @@ def train(
 
     step_start = time.time()
 
-    dataloader.sampler.set_epoch(epoch)
+    # dataloader.sampler.set_epoch(epoch)
 
     # images / x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
-    for batch, (images, labels) in enumerate(dataloader):
+    # for batch, (images, labels) in enumerate(dataloader):
+    for batch, images in enumerate(dataloader):
 
       # print('\n')
 
@@ -87,7 +88,7 @@ def train(
       optimizer.zero_grad() # sets .grad to None
 
       # TODO: Can dataloader be configured in a way that the date is on the device by default?
-      images = images.to(_device)
+      images = images.to(device._device)
 
       # timesteps of (BATCH_SIZE)
       timesteps = torch.randint(
@@ -173,10 +174,10 @@ def is_first_local_device():
 # This code is executed `NUMBER_OF_GPUS` times
 def main():
 
-  global_rank = os.getenv('RANK')
-  group_rank = os.getenv('GROUP_RANK')
-  local_rank = os.getenv('LOCAL_RANK')
-  world_size = os.getenv('WORLD_SIZE')
+  global_rank = int(os.getenv('RANK'))
+  group_rank = int(os.getenv('GROUP_RANK'))
+  local_rank = int(os.getenv('LOCAL_RANK'))
+  world_size = int(os.getenv('WORLD_SIZE'))
 
   torch.manual_seed(global_rank)
 
@@ -211,22 +212,25 @@ def main():
 
     run.download_checkpoint()
 
-  distributed.barrier()
+  # distributed.barrier()
 
   dataloader = create_dataloader(
     _logger,
+    device,
     local_rank,
     world_size,
   )
 
   model = UNet()
 
+  model.to('cpu')
+
   model = DDP(
     model,
     # device_ids=[
-    #   rank,
+    #   local_rank,
     # ],
-    # output_device = rank,
+    # output_device = local_rank,
     # find_unused_parameters = True,
   )
 
@@ -289,7 +293,7 @@ def main():
   run.destroy()
 
   # wait for worker 0 to save checkpoints
-  distributed.barrier()
+  # distributed.barrier()
 
   distributed.destroy()
 
@@ -308,8 +312,12 @@ if is_parent_process():
 NCCL_DEBUG=WARN \
 TORCH_CPP_LOG_LEVEL=INFO \
 TORCH_DISTRIBUTED_DEBUG=DETAIL \
+PYTORCH_ENABLE_MPS_FALLBACK=1 \
 LOG=1 \
 WANDB=0 \
+DS=128 \
+BS=16 \
+CPU=1 \
 torchrun \
 --nnodes=1 \
 --nproc_per_node=1 \

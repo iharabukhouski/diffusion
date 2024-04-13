@@ -22,5 +22,7 @@ setuptools.setup(
     'onnxscript',
 
     'python-dotenv',
+
+    'safetensors',
   ],
 )

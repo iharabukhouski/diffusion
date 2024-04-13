@@ -219,6 +219,19 @@ class Checkpoint:
 
     return checkpoint['step']
 
+  def log(
+    self,
+    *args,
+  ):
+
+    if not config.WANDB:
+
+      self.logger.debug('WANDB disabled')
+
+    else:
+
+      self.run.log(*args)
+
   def destroy(
     self,
   ):

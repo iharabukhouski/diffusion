@@ -20,7 +20,7 @@ class AnimeDataset(Dataset):
   ):
 
     return len(self.file.keys())
-  
+
   def __getitem__(
     self,
     i,

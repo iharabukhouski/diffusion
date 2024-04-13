@@ -3,7 +3,7 @@
 import os
 import torch
 import config
-import device
+from device import Device
 # from scheduler import betas, sqrt_one_minus_alphas_cumprod, sqrt_recip_alphas, posterior_variance, get_values_at_timesteps
 from scheduler import get_values_at_timesteps
 from checkpoints import Checkpoint
@@ -115,7 +115,7 @@ def main():
 
   _logger = partial(Logger, rank)
 
-  _device = device.init(
+  device = Device(
     _logger,
     rank,
   )
@@ -124,7 +124,7 @@ def main():
 
   run = Checkpoint(
     _logger,
-    _device,
+    device,
     rank,
   )
 

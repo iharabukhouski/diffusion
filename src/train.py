@@ -3,17 +3,17 @@
 import os
 
 import time
+from functools import partial
 import torch
 from torch.optim import Adam
 import torch.nn.functional as F
+from torch.nn.parallel import DistributedDataParallel as DDP
 from data import create_dataloader
 import config
 from logger import Logger
-import device as Device
-import wandb
+from device import Device
 from model import UNet
 from scheduler import images_to_images_with_noise_at_timesteps
-import checkpoints
 from checkpoints import Checkpoint
 from distributed import Distributed
 
@@ -132,14 +132,12 @@ def train(
       #   logger.debug('4 PRM', f'{p[0][0].item():.5f}')
       #   logger.debug('4 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
-      if config.WANDB:
-
-        run.log(
-          {
-            'loss': loss_number,
-          },
-          step = step,
-        )
+      run.log(
+        {
+          'loss': loss_number,
+        },
+        step = step,
+      )
 
       compute_end = time.time()
 
@@ -160,16 +158,13 @@ def train(
 
   return step, loss_number
 
-
-from functools import partial
-
-def is_first_global_gpu():
+def is_first_global_device():
 
   global_rank = os.getenv('RANK')
 
   return global_rank == 0
 
-def is_first_local_gpu():
+def is_first_local_device():
 
   local_rank = os.getenv('LOCAL_RANK')
 
@@ -196,7 +191,7 @@ def main():
   logger.debug('Local Rank', local_rank)
   logger.debug('World Size', world_size)
 
-  device = Device.init(
+  device = Device(
     _logger,
     local_rank,
   )
@@ -212,33 +207,33 @@ def main():
     device,
   )
 
-  if is_first_local_gpu():
+  if is_first_local_device():
 
     run.download_checkpoint()
 
   distributed.barrier()
 
-  # dataloader = create_dataloader(
-  #   _logger,
-  #   local_rank,
-  #   world_size,
-  # )
+  dataloader = create_dataloader(
+    _logger,
+    local_rank,
+    world_size,
+  )
 
-  # model = UNet()
+  model = UNet()
 
-  # model = DDP(
-  #   model,
-  #   # device_ids=[
-  #   #   rank,
-  #   # ],
-  #   # output_device = rank,
-  #   # find_unused_parameters = True,
-  # )
+  model = DDP(
+    model,
+    # device_ids=[
+    #   rank,
+    # ],
+    # output_device = rank,
+    # find_unused_parameters = True,
+  )
 
-  # # watch gradients only for rank 0
-  # # if rank == 0:
+  # watch gradients only for rank 0
+  # if is_first_local_device():
 
-  # #   run.watch(model)
+  #   run.watch(model)
 
   #   # run.watch(
   #   #   models = model,
@@ -247,37 +242,37 @@ def main():
   #   #   log_graph = True,
   #   # )
 
-  # optimizer = Adam(
-  #   model.parameters(),
-  #   lr = config.LEARNING_RATE,
-  # )
+  optimizer = Adam(
+    model.parameters(),
+    lr = config.LEARNING_RATE,
+  )
 
   step = run.load_weights(
     model,
     optimizer,
   )
 
-  # model.train()
+  model.train()
 
-  # start = time.time()
+  start = time.time()
 
-  # step, loss_number = train(
-  #   logger,
-  #   device,
-  #   run,
-  #   dataloader,
-  #   model,
-  #   optimizer,
-  #   step,
-  # )
+  step, loss_number = train(
+    logger,
+    device,
+    run,
+    dataloader,
+    model,
+    optimizer,
+    step,
+  )
 
-  # end = time.time()
+  end = time.time()
 
-  # logger.info(f'Step: {step}')
-  # logger.info(f'Loss: {loss_number:.4f}')
-  # logger.info(f'Time: {end - start:.4f}s')
+  logger.info(f'Step: {step}')
+  logger.info(f'Loss: {loss_number:.4f}')
+  logger.info(f'Time: {end - start:.4f}s')
 
-  if is_first_local_gpu:
+  if is_first_local_device():
 
     run.save_weights(
       model,

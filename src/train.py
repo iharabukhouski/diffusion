@@ -17,6 +17,8 @@ from scheduler import images_to_images_with_noise_at_timesteps
 from checkpoints import Checkpoint
 from distributed import Distributed
 
+import wandb
+
 def calculate_loss(
   model,
   images, # x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
@@ -161,13 +163,13 @@ def train(
 
 def is_first_global_device():
 
-  global_rank = os.getenv('RANK')
+  global_rank = int(os.getenv('RANK'))
 
   return global_rank == 0
 
 def is_first_local_device():
 
-  local_rank = os.getenv('LOCAL_RANK')
+  local_rank = int(os.getenv('LOCAL_RANK'))
 
   return local_rank == 0
 
@@ -197,15 +199,33 @@ def main():
     local_rank,
   )
 
-  run = Checkpoint(
-    _logger,
-    device,
-    global_rank,
-  )
-
   distributed = Distributed(
     _logger,
     device,
+  )
+
+  if is_first_global_device():
+
+    __run_id = os.getenv('RUN', wandb.util.generate_id())
+
+    _run_id = [__run_id] * world_size
+
+  else:
+
+    _run_id = [None] * world_size
+
+  torch.distributed.broadcast_object_list(
+    _run_id,
+    src = 0,
+  )
+
+  print(_run_id)
+
+  run = Checkpoint(
+    _logger,
+    device,
+    _run_id[global_rank],
+    global_rank,
   )
 
   if is_first_local_device():
@@ -254,6 +274,7 @@ def main():
   step = run.load_weights(
     model,
     optimizer,
+    ddp = True,
   )
 
   model.train()
@@ -285,10 +306,9 @@ def main():
       loss_number,
     )
 
-    run.save_architecture(
-      run,
-      model,
-    )
+    # run.save_architecture(
+    #   model,
+    # )
 
   run.destroy()
 
@@ -313,8 +333,8 @@ NCCL_DEBUG=WARN \
 TORCH_CPP_LOG_LEVEL=INFO \
 TORCH_DISTRIBUTED_DEBUG=DETAIL \
 PYTORCH_ENABLE_MPS_FALLBACK=1 \
+RUN=nmhwij7c \
 LOG=1 \
-WANDB=0 \
 DS=128 \
 BS=16 \
 CPU=1 \

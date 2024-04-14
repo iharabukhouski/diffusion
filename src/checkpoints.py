@@ -13,14 +13,14 @@ def ddp_checkpoint(
   _state_dict = OrderedDict()
   pattern = re.compile('module.')
 
-  for k, v in state_dict.items():
+  for key, value in state_dict.items():
 
-    if re.search('module', k):
+    if re.search('module', key):
 
-        _state_dict[re.sub(pattern, '', k)] = v
+        _state_dict[re.sub(pattern, '', key)] = value
     else:
 
-        _state_dict[k] = v
+        _state_dict[key] = value
 
   return _state_dict
 
@@ -30,23 +30,29 @@ class Checkpoint:
     self,
     _logger,
     device,
+    run_id,
     rank,
   ):
 
     self.logger = _logger('CHECKPOINT')
 
-    if not config.WANDB:
+    self.disabled = not config.WANDB
 
-      self.logger.info('WANDB Disabled')
+    if self.disabled:
+
+      self.logger.info('Disabled')
 
     else:
 
       # TODO: We need to have the same RUN for all processes
-      self.run_id = os.getenv('RUN') # wandb.util.generate_id()
+      # self.run_id = os.getenv('RUN') # wandb.util.generate_id()
+      self.run_id = run_id
 
       self.device = device
 
       self.logger.debug('Init')
+
+      self.logger.info('RUN', self.run_id)
 
       # os.environ['WANDB_SILENT'] = 'true'
 
@@ -159,7 +165,7 @@ class Checkpoint:
 
       return
 
-      self.logger.info('Downloading...')
+    self.logger.info('Downloading...')
 
     # checkpoint_filehandler = run.restore(config.CHECKPOINT_PATH)
     wandb.restore(
@@ -183,8 +189,9 @@ class Checkpoint:
     self,
     model,
     optimizer = None,
+    ddp = False
   ):
-    
+
     default_step = 0
 
     if not config.WANDB:
@@ -205,7 +212,15 @@ class Checkpoint:
       map_location = self.device._device,
     )
 
-    model.load_state_dict(ddp_checkpoint(checkpoint['model_state_dict']))
+    if ddp:
+
+      model_state_dict = checkpoint['model_state_dict']
+
+    else:
+
+      model_state_dict = ddp_checkpoint(checkpoint['model_state_dict'])
+
+    model.load_state_dict(model_state_dict)
 
     self.logger.info('Model Restored')
 

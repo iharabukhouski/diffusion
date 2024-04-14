@@ -44,22 +44,17 @@ NUMBER_OF_CPUS = int(os.getenv('CPUS') or DEFAULT_NUMBER_OF_CPUS)
 ## Model
 T = 100 # number of steps
 TIMESTEP_EMBEDDING_DIMENTIONALITY = 32 # dimentionality of positional encodding of timesteps
-# IMG_SIZE = 64
-IMG_SIZE = 8
+IMG_SIZE = 64
 IMG_CHANNELS = 3
-# CHANNELS = (IMG_CHANNELS, 64, 128, 256, 512, 1024) # depth? / using filters & convolution
-CHANNELS = (IMG_CHANNELS, IMG_SIZE, 128) # depth? / using filters & convolution
+CHANNELS = (IMG_CHANNELS, 64, 128, 256, 512, 1024) # depth? / using filters & convolution
 
 ## Training
 DEFAULT_DATASET_SIZE = None
 DATASET_SIZE = int(os.getenv('DS', '0')) or DEFAULT_DATASET_SIZE
-# DATASET_SIZE = 1024
-# DATASET_SIZE = None
 
 DEFAULT_BATCH_SIZE = 128
 BATCH_SIZE = int(os.getenv('BS') or DEFAULT_BATCH_SIZE)
 
-# NUMBER_OF_EPOCHS = 100
 DEFAULT_NUMBER_OF_EPOCHS = 1
 NUMBER_OF_EPOCHS = int(os.getenv('EPOCHS') or DEFAULT_NUMBER_OF_EPOCHS)
 LEARNING_RATE = 0.001 * NUMBER_OF_GPUS

@@ -122,9 +122,12 @@ def main():
 
   model = UNet()
 
+  run_id = os.getenv('RUN')
+
   run = Checkpoint(
     _logger,
     device,
+    run_id,
     rank,
   )
 
@@ -132,6 +135,7 @@ def main():
 
   run.load_weights(
     model,
+    ddp = False,
   )
 
   model.eval()

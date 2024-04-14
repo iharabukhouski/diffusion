@@ -61,6 +61,8 @@ class Device:
 
       self.logger.info('CUDA')
 
+      # torch.cuda.set_device()
+
       torch.set_default_device(rank)
 
       self._device = torch.device(f'cuda:{rank}')

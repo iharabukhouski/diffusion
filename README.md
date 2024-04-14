@@ -29,6 +29,10 @@ cd data
 git clone https://huggingface.co/datasets/iharabukhouski/stanford_cars
 ```
 
+```bash
+scp -p ./data/anime.safetensors root@199.195.151.121:40680:/root/diffusion/data/anime.safetensors
+```
+
 # Model
 
 [Model](./docs/model.md)

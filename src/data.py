@@ -6,54 +6,54 @@ import config
 from torch.utils.data.distributed import DistributedSampler
 from stanford_cars import create_dataset
 from anime import AnimeDataset
+import device
 
-class MultiEpochsDataLoader(torch.utils.data.DataLoader):
+class RepeatSampler:
 
-    def __init__(
-      self,
-      *args,
-      **kwargs,
-    ):
+  """
+  Sampler that repeats forever
+  """
 
-        super().__init__(*args, **kwargs)
+  def __init__(
+    self,
+    sampler,
+  ):
 
-        self._DataLoader__initialized = False
-        self.batch_sampler = _RepeatSampler(self.batch_sampler)
-        self._DataLoader__initialized = True
-        self.iterator = super().__iter__()
+    self.sampler = sampler
 
-    def __len__(self):
+  def __iter__(
+    self,
+  ):
 
-        return len(self.batch_sampler.sampler)
+    while True:
 
-    def __iter__(self):
+      yield from iter(self.sampler)
 
-        for i in range(len(self)):
+class MultiEpochsDataLoader(DataLoader):
 
-            yield next(self.iterator)
+  def __init__(
+    self,
+    *args,
+    **kwargs,
+  ):
 
+    super().__init__(*args, **kwargs)
 
-class _RepeatSampler(object):
+    self._DataLoader__initialized = False
+    self.batch_sampler = RepeatSampler(self.batch_sampler)
+    self._DataLoader__initialized = True
+    self.iterator = super().__iter__()
 
-    """ Sampler that repeats forever.
-    Args:
-        sampler (Sampler)
-    """
+  def __len__(self):
 
-    def __init__(
-      self,
-      sampler,
-    ):
+    return len(self.batch_sampler.sampler)
 
-        self.sampler = sampler
+  def __iter__(self):
 
-    def __iter__(
-      self,
-    ):
+    for i in range(len(self)):
 
-        while True:
+      yield next(self.iterator)
 
-            yield from iter(self.sampler)
 
 def create_dataloader(
   _logger,
@@ -124,18 +124,23 @@ def create_dataloader(
     persistent_workers=True,
   )
 
+  print_dataloader(
+    logger,
+    dataloader,
+  )
+
   return dataloader
 
-# def print_dataloader(
-#   logger,
-#   dataloader,
-# ):
+def print_dataloader(
+  logger,
+  dataloader,
+):
 
-#   number_of_batches = len(dataloader)
-#   batch_size = dataloader.batch_size
+  number_of_batches = len(dataloader)
+  batch_size = dataloader.batch_size
 
-#   logger.info('Samples:', number_of_batches * batch_size)
-#   logger.info('Batches:', number_of_batches)
+  logger.info('Samples:', number_of_batches * batch_size)
+  logger.info('Batches:', number_of_batches)
 
 def x_to_PIL(
   x, # a.k.a. image

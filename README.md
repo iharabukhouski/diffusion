@@ -30,7 +30,7 @@ git clone https://huggingface.co/datasets/iharabukhouski/stanford_cars
 ```
 
 ```bash
-scp -p ./data/anime.safetensors root@199.195.151.121:40680:/root/diffusion/data/anime.safetensors
+scp -P 13808 -p ./data/anime.safetensors root@69.55.141.4:/root/diffusion/data/anime.safetensors
 ```
 
 # Model

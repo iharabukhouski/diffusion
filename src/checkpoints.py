@@ -153,6 +153,7 @@ class Checkpoint:
     self,
   ):
     
+    # if not os.getenv('RUN'):
     if not self.run_id:
 
       self.logger.debug('No Run ID')

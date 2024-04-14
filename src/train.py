@@ -78,8 +78,6 @@ def train(
 
       # print('\n')
 
-
-
       # for p in model.parameters():
 
       #   logger.debug('1 PRM', f'{p[0][0].item():.5f}')
@@ -243,6 +241,7 @@ def main():
 
   model = UNet()
 
+  # TODO: should be removed; needed for local cpu run
   model.to('cpu')
 
   model = DDP(

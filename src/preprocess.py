@@ -35,22 +35,40 @@ files = os.listdir(dir)
 
 dataset = {}
 
+if os.path.exists(config.ANIME_DATASET_PATH):
+
+  print('Removed:', config.ANIME_DATASET_PATH)
+
+  os.rmdir(config.ANIME_DATASET_PATH)
+
+print('Created:', config.ANIME_DATASET_PATH)
+
+os.makedirs(config.ANIME_DATASET_PATH)
+
 for i, file in enumerate(files):
 
   file_path = os.path.join(dir, file)
 
   image = PIL.Image.open(file_path)
 
-  dataset[str(i)] = transform(image)
+  transformed_image = transform(image)
+
+  torch.save(
+    transformed_image,
+    os.path.join(config.ANIME_DATASET_PATH, str(i)),
+  )
+
+  # dataset[str(i)] = transformed_image
 
 # safetensors.torch.save_file(
 #   dataset,
 #   config.ANIME_DATASET_PATH,
 # )
-torch.save(
-  dataset,
-  config.ANIME_DATASET_PATH,
-)
+
+# torch.save(
+#   dataset,
+#   config.ANIME_DATASET_PATH,
+# )
 
 end = time.time()
 

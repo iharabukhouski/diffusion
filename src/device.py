@@ -16,6 +16,9 @@ def default_device(
 
     torch.set_default_device(rank)
 
+    # Needed for Torch Elastic on CUDA
+    torch.cuda.set_device(rank)
+
     # return CUDA
     return torch.device(f'cuda:{rank}')
 
@@ -61,7 +64,8 @@ class Device:
 
       self.logger.info('CUDA')
 
-      # torch.cuda.set_device()
+      # Needed for Torch Elastic on CUDA
+      torch.cuda.set_device(rank)
 
       torch.set_default_device(rank)
 

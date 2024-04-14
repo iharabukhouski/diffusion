@@ -49,7 +49,9 @@ class Logger:
 
     # TODO: only if log level is 1; default log level should be 1
 
-    print(f'[I] [{self.namespace}{self.repr_rank()}]', *args)
+    if self.rank == 0:
+
+      print(f'[I] [{self.namespace}{self.repr_rank()}]', *args)
 
   def debug(
     self,
@@ -59,8 +61,6 @@ class Logger:
     # TODO: only if log level is 2
 
     if int(os.getenv('LOG', '0')) >= 1:
-
-      
 
       print(f'[D] [{self.namespace}{self.repr_rank()}]', *args)
 

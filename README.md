@@ -30,7 +30,7 @@ git clone https://huggingface.co/datasets/iharabukhouski/stanford_cars
 ```
 
 ```bash
-scp -P 13808 -p ./data/anime.safetensors root@69.55.141.4:/root/diffusion/data/anime.safetensors
+scp -P 45192 -pr ./data/anime.tar.gz root@45.23.135.240:/root/diffusion/data/anime.tar.gz
 ```
 
 # Model
@@ -127,3 +127,14 @@ MPS=1 RUN=<WANDB_RUN_ID> ./run.py
 # Profiling
 
 [Profiling](./docs/profiling.md)
+
+---
+
+scp -P 42175 -pr ./data/anime.tar.gz root@174.31.93.199:/root/diffusion/anime.tar.gz
+
+tar -czvf anime.tar.gz directory
+
+tar -xzvf anime.tar.gz
+
+
+LOG=I:CHECKPOINT:0

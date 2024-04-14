@@ -149,3 +149,10 @@ if __name__ == '__main__':
   os.system('clear')
 
   main()
+
+"""
+
+RUN=oeioy8sv \
+./run.py
+
+"""

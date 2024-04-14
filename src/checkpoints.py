@@ -1,4 +1,5 @@
 import os
+import shutil
 import torch
 import wandb
 import config
@@ -38,6 +39,8 @@ class Checkpoint:
 
     self.disabled = not config.WANDB
 
+    self.rank = rank
+
     if self.disabled:
 
       self.logger.info('Disabled')
@@ -54,7 +57,9 @@ class Checkpoint:
 
       self.logger.info('RUN', self.run_id)
 
-      # os.environ['WANDB_SILENT'] = 'true'
+      if not self.rank == 0:
+
+        os.environ['WANDB_SILENT'] = 'true'
 
       wandb.login(
         key = config.WANDB_API_KEY,
@@ -153,8 +158,8 @@ class Checkpoint:
     self,
   ):
     
-    # if not os.getenv('RUN'):
-    if not self.run_id:
+    if not os.getenv('RUN'):
+    # if not self.run_id:
 
       self.logger.debug('No Run ID')
 
@@ -169,12 +174,17 @@ class Checkpoint:
     self.logger.info('Downloading...')
 
     # checkpoint_filehandler = run.restore(config.CHECKPOINT_PATH)
-    wandb.restore(
+    checkpoint_filehandler = wandb.restore(
       config.CHECKPOINT_PATH,
       # run_path: str | None = None,
       f'{config.WANDB_USERNAME}/{config.WANDB_PROJECT}/{self.run_id}_0',
       # replace: bool = False,
       # root: str | None = None
+    )
+
+    shutil.copyfile(
+      checkpoint_filehandler.name,
+      config.CHECKPOINT_PATH,
     )
 
     # self.logger.info('Path', checkpoint_filehandler.name)

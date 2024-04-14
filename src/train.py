@@ -70,7 +70,7 @@ def train(
 
     step_start = time.time()
 
-    # dataloader.sampler.set_epoch(epoch)
+    dataloader.sampler.set_epoch(epoch)
 
     # images / x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
     # for batch, (images, labels) in enumerate(dataloader):
@@ -217,8 +217,6 @@ def main():
     src = 0,
   )
 
-  print(_run_id)
-
   run = Checkpoint(
     _logger,
     device,
@@ -230,7 +228,7 @@ def main():
 
     run.download_checkpoint()
 
-  # distributed.barrier()
+  distributed.barrier()
 
   dataloader = create_dataloader(
     _logger,
@@ -242,10 +240,13 @@ def main():
   model = UNet()
 
   # TODO: should be removed; needed for local cpu run
-  model.to('cpu')
+  # model.to('cpu')
+
+  device_ids = [ local_rank ] if device.is_cuda() else None
 
   model = DDP(
     model,
+    device_ids = device_ids,
     # device_ids=[
     #   local_rank,
     # ],
@@ -312,13 +313,21 @@ def main():
   run.destroy()
 
   # wait for worker 0 to save checkpoints
-  # distributed.barrier()
+  distributed.barrier()
 
   distributed.destroy()
 
 def is_parent_process():
 
   return __name__ == '__main__'
+
+if __name__ == '__main__':
+
+  print('Parent Process:', os.getpid())
+
+if __name__ == '__mp_main__':
+
+  print('Child Process:', os.getpid())
 
 if is_parent_process():
 
@@ -337,6 +346,14 @@ LOG=1 \
 DS=128 \
 BS=16 \
 CPU=1 \
+
+CUDA_LAUNCH_BLOCKING=1 \
+WANDB=0 \
+
+RUN=oeioy8sv \
+CPU=1 \
+DS=128 \
+BS=16 \
 torchrun \
 --nnodes=1 \
 --nproc_per_node=1 \

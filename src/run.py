@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
 """
 
-RUN=oeioy8sv \
+RUN=1660f78i \
 ./run.py
 
 """

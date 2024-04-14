@@ -130,7 +130,7 @@ MPS=1 RUN=<WANDB_RUN_ID> ./run.py
 
 ---
 
-scp -P 42175 -pr ./data/anime.tar.gz root@174.31.93.199:/root/diffusion/anime.tar.gz
+scp -P 41542 -pr ./data/anime.tar.gz root@174.31.93.199:/root/diffusion/anime.tar.gz
 
 tar -czvf anime.tar.gz directory
 
@@ -138,3 +138,8 @@ tar -xzvf anime.tar.gz
 
 
 LOG=I:CHECKPOINT:0
+
+---
+
+- reduce lr
+- random horizontal flip

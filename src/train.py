@@ -88,7 +88,7 @@ def train(
       optimizer.zero_grad() # sets .grad to None
 
       # TODO: Can dataloader be configured in a way that the date is on the device by default?
-      images = images.to(device._device)
+      # images = images.to(device._device)
 
       # timesteps of (BATCH_SIZE)
       timesteps = torch.randint(

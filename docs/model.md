@@ -49,4 +49,5 @@
 # Links
 
 https://www.youtube.com/watch?v=a4Yfz2FxXiY&t=717s
+https://colab.research.google.com/drive/1sjy9odlSSy0RBVgMTgP7s99NXsqglsUL?usp=sharing#scrollTo=BIc33L9-uK4q
 https://www.youtube.com/watch?v=HoKDTa5jHvg&t=1338s

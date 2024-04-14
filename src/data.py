@@ -66,12 +66,12 @@ def create_dataloader(
 
   logger.debug('Init')
 
-  # dataset = create_dataset()
-  dataset = AnimeDataset(
-    _logger,
-    path = config.ANIME_DATASET_PATH,
-    device = device,
-  )
+  dataset = create_dataset()
+  # dataset = AnimeDataset(
+  #   _logger,
+  #   path = config.ANIME_DATASET_PATH,
+  #   device = device,
+  # )
 
   _indices = list(range(len(dataset)))
   indices = _indices if config.DATASET_SIZE is None else _indices[:config.DATASET_SIZE]

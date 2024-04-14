@@ -20,7 +20,7 @@ def create_dataset():
           config.IMG_SIZE,
         ),
       ),
-      # transforms.RandomHorizontalFlip(),
+      transforms.RandomHorizontalFlip(),
       transforms.ToTensor(), # scale data to [0, 1]
 
       # TODO: I am not sure why but this causes a crash "AttributeError: Can't pickle local object 'create_dataset.<locals>.<lambda>'"
@@ -35,16 +35,16 @@ def create_dataset():
     transform = transform,
   )
 
-  # test = datasets.StanfordCars(
-  #   root = '../data',
-  #   download = False,
-  #   transform = transform,
-  #   split = 'test',
-  # )
+  test = datasets.StanfordCars(
+    root = '../data',
+    download = False,
+    transform = transform,
+    split = 'test',
+  )
 
   return torch.utils.data.ConcatDataset(
     [
       train,
-      # test,
+      test,
     ],
   )

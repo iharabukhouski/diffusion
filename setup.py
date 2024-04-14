@@ -24,5 +24,7 @@ setuptools.setup(
     'python-dotenv',
 
     'safetensors',
+
+    'nvitop',
   ],
 )

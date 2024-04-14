@@ -7,7 +7,7 @@ from device import Device
 # from scheduler import betas, sqrt_one_minus_alphas_cumprod, sqrt_recip_alphas, posterior_variance, get_values_at_timesteps
 from scheduler import get_values_at_timesteps
 from checkpoints import Checkpoint
-from model import UNet
+from model import UNet, print_model
 from plt import plt_images
 from logger import Logger
 from functools import partial
@@ -79,7 +79,8 @@ def sample_image(
   # image = x_T
   image = torch.randn(
     (
-      2, # batch_size = 1
+      # 2, # batch_size = 1
+      1,
       config.IMG_CHANNELS,
       config.IMG_SIZE,
       config.IMG_SIZE,
@@ -144,6 +145,8 @@ def main():
 
   plt_images(images)
 
+  print_model(model)
+
 if __name__ == '__main__':
 
   os.system('clear')
@@ -152,7 +155,7 @@ if __name__ == '__main__':
 
 """
 
-RUN=1660f78i \
+RUN=063klk3s \
 ./run.py
 
 """

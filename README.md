@@ -130,11 +130,15 @@ MPS=1 RUN=<WANDB_RUN_ID> ./run.py
 
 ---
 
-scp -P 41542 -pr ./data/anime.tar.gz root@174.31.93.199:/root/diffusion/anime.tar.gz
+scp -P 42064 -pr ./data/anime.tar.gz root@24.52.17.82:/root/diffusion/anime.tar.gz
 
-tar -czvf anime.tar.gz directory
+scp -P 42064 -pr ./data/stanford_cars.tar.gz root@24.52.17.82:/root/diffusion/stanford_cars.tar.gz
+
+tar -czvf ./data/stanford_cars.tar.gz ./data/stanford_cars
 
 tar -xzvf anime.tar.gz
+
+tar -xzvf stanford_cars.tar.gz
 
 
 LOG=I:CHECKPOINT:0
@@ -143,3 +147,10 @@ LOG=I:CHECKPOINT:0
 
 - reduce lr
 - random horizontal flip
+
+---
+
+[2024-04-14 22:44:59,020] torch.distributed.run: [WARNING] 
+[2024-04-14 22:44:59,020] torch.distributed.run: [WARNING] *****************************************
+[2024-04-14 22:44:59,020] torch.distributed.run: [WARNING] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+[2024-04-14 22:44:59,020] torch.distributed.run: [WARNING] *****************************************

@@ -73,8 +73,8 @@ def train(
     dataloader.sampler.set_epoch(epoch)
 
     # images / x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
-    # for batch, (images, labels) in enumerate(dataloader):
-    for batch, images in enumerate(dataloader):
+    for batch, (images, labels) in enumerate(dataloader):
+    # for batch, images in enumerate(dataloader):
 
       # print('\n')
 
@@ -88,7 +88,7 @@ def train(
       optimizer.zero_grad() # sets .grad to None
 
       # TODO: Can dataloader be configured in a way that the date is on the device by default?
-      # images = images.to(device._device)
+      images = images.to(device._device)
 
       # timesteps of (BATCH_SIZE)
       timesteps = torch.randint(
@@ -243,14 +243,12 @@ def main():
   # model.to('cpu')
 
   device_ids = [ local_rank ] if device.is_cuda() else None
+  output_device = local_rank if device.is_cuda() else None
 
   model = DDP(
     model,
     device_ids = device_ids,
-    # device_ids=[
-    #   local_rank,
-    # ],
-    # output_device = local_rank,
+    output_device = output_device,
     # find_unused_parameters = True,
   )
 

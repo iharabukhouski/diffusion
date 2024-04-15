@@ -7,6 +7,7 @@ class Distributed:
 
   GLOO - supports only CPU
   NCCL - supports only CUDA
+  MPI - only supported if pytorch was compiled on a machine with mpi installed
 
   """
 
@@ -42,8 +43,6 @@ class Distributed:
     #  world_size = world_size,
     # )
 
-    # TODO: I need to compile torch from source on the machine that has MPI installed
-    # NOTE: NCCL not supported on macos
     backend = dist.Backend.NCCL if device.is_cuda() else dist.Backend.GLOO
 
     dist.init_process_group(

@@ -30,7 +30,7 @@ def sample_image_at_timestemp_minus_one(
   alphas_cumprod = torch.cumprod(alphas, axis = 0)
   alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.0)
   sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
-  sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+  # sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod) # TODO: I do not think it is ever used
   sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
   posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
@@ -145,7 +145,7 @@ def main():
 
   plt_images(images)
 
-  print_model(model)
+  # print_model(model)
 
 if __name__ == '__main__':
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
 
 """
 
-RUN=063klk3s \
+RUN=pkiauj7o \
 ./run.py
 
 """

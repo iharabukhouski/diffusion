@@ -3,7 +3,6 @@ import torch
 
 CPU = torch.device('cpu')
 MPS = torch.device('mps')
-CUDA = torch.device('cuda')
 
 def default_device(
   logger,
@@ -19,7 +18,6 @@ def default_device(
     # Needed for Torch Elastic on CUDA
     torch.cuda.set_device(rank)
 
-    # return CUDA
     return torch.device(f'cuda:{rank}')
 
   elif torch.backends.mps.is_available():

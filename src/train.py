@@ -19,6 +19,9 @@ from distributed import Distributed
 
 import wandb
 
+# from torchtnt.utils.flops import FlopTensorDispatchMode
+# from flop_counter import FlopCounterMode
+
 def calculate_loss(
   model,
   images, # x_0 of (BATCH_SIZE, IMG_CHANNELS, IMG_SIZE, IMG_SIZE)
@@ -41,9 +44,6 @@ def calculate_loss(
     noises,
     noises_predicted,
   )
-
-# from torchtnt.utils.flops import FlopTensorDispatchMode
-# from flop_counter import FlopCounterMode
 
 def train(
   logger,
@@ -202,6 +202,7 @@ def main():
     device,
   )
 
+  # broadcasting run_id from worker 0 to all other workers
   if is_first_global_device():
 
     __run_id = os.getenv('RUN', wandb.util.generate_id())
@@ -217,7 +218,7 @@ def main():
     src = 0,
   )
 
-  run = Checkpoint(
+  checkpoint = Checkpoint(
     _logger,
     device,
     _run_id[global_rank],
@@ -226,8 +227,9 @@ def main():
 
   if is_first_local_device():
 
-    run.download_checkpoint()
+    checkpoint.download_checkpoint()
 
+  # waiting for worker 0 to download checkpoint, so all workers can use it
   distributed.barrier()
 
   dataloader = create_dataloader(
@@ -269,7 +271,7 @@ def main():
     lr = config.LEARNING_RATE,
   )
 
-  step = run.load_weights(
+  step = checkpoint.load_weights(
     model,
     optimizer,
     ddp = True,
@@ -282,7 +284,7 @@ def main():
   step, loss_number = train(
     logger,
     device,
-    run,
+    checkpoint,
     dataloader,
     model,
     optimizer,
@@ -297,18 +299,18 @@ def main():
 
   if is_first_local_device():
 
-    run.save_weights(
+    checkpoint.save_weights(
       model,
       optimizer,
       step,
       loss_number,
     )
 
-    # run.save_architecture(
+    # checkpoint.save_architecture(
     #   model,
     # )
 
-  run.destroy()
+  checkpoint.destroy()
 
   # wait for worker 0 to save checkpoints
   distributed.barrier()
@@ -339,14 +341,6 @@ NCCL_DEBUG=WARN \
 TORCH_CPP_LOG_LEVEL=INFO \
 TORCH_DISTRIBUTED_DEBUG=DETAIL \
 PYTORCH_ENABLE_MPS_FALLBACK=1 \
-RUN=nmhwij7c \
-LOG=1 \
-DS=128 \
-BS=16 \
-CPU=1 \
-
-CUDA_LAUNCH_BLOCKING=1 \
-WANDB=0 \
 
 RUN=oeioy8sv \
 CPU=1 \

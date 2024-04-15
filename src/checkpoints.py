@@ -39,19 +39,17 @@ class Checkpoint:
 
     self.disabled = not config.WANDB
 
-    self.rank = rank
-
     if self.disabled:
 
       self.logger.info('Disabled')
 
     else:
 
-      # TODO: We need to have the same RUN for all processes
-      # self.run_id = os.getenv('RUN') # wandb.util.generate_id()
       self.run_id = run_id
 
       self.device = device
+
+      self.rank = rank
 
       self.logger.debug('Init')
 
@@ -101,7 +99,11 @@ class Checkpoint:
     loss,
   ):
 
-    if config.WANDB:
+    if self.disabled:
+
+      self.logger.info('Saving Weights Disabled')
+
+    else:
 
       self.logger.info('Save Weights: Step', step)
       self.logger.info('Save Weights: Loss', loss)
@@ -117,15 +119,15 @@ class Checkpoint:
         config.CHECKPOINT_PATH,
       )
 
+      self.logger.info('Uploading...')
+
       # Includes checkpoint in wandb run
       self.run.save(
         config.CHECKPOINT_PATH,
         # policy = 'now'
       )
 
-    else:
-
-      self.logger.info('Saving Weights Disabled')
+      self.logger.info('Uploaded')
 
   def save_architecture(
     self,
@@ -205,12 +207,12 @@ class Checkpoint:
 
     default_step = 0
 
-    if not config.WANDB:
+    if self.disabled:
 
-      self.logger.debug('WANDB disabled')
+      self.logger.debug('Disabled')
 
       return default_step
-    
+
     if not self.run.resumed:
 
       self.logger.info('No Checkpoint')
@@ -252,9 +254,9 @@ class Checkpoint:
     **kwargs,
   ):
 
-    if not config.WANDB:
+    if self.disabled:
 
-      self.logger.debug('WANDB disabled')
+      self.logger.debug('Disabled')
 
     else:
 
@@ -267,9 +269,9 @@ class Checkpoint:
     self,
   ):
 
-    if not config.WANDB:
+    if self.disabled:
 
-      self.logger.debug('WANDB disabled')
+      self.logger.debug('Disabled')
 
     else:
 

@@ -132,7 +132,7 @@ MPS=1 RUN=<WANDB_RUN_ID> ./run.py
 
 scp -P 28495 -pr ./data/anime.tar.gz root@66.114.112.70:/root/diffusion/anime.tar.gz
 
-scp -P 28495 -pr ./data/stanford_cars.tar.gz root@66.114.112.70:/root/diffusion/stanford_cars.tar.gz
+scp -P 41604 -pr ./data/stanford_cars.tar.gz root@66.114.112.70:/root/diffusion/stanford_cars.tar.gz
 
 tar -czvf ./data/stanford_cars.tar.gz ./data/stanford_cars
 
@@ -147,6 +147,7 @@ LOG=I:CHECKPOINT:0
 
 - reduce lr
 - random horizontal flip
+- we shoudl not do wandb init for run.py; only do logins
 
 ---
 

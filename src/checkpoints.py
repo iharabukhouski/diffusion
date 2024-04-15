@@ -167,9 +167,9 @@ class Checkpoint:
 
       return
     
-    if not config.WANDB:
+    if self.disabled:
 
-      self.logger.debug('WANDB disabled')
+      self.logger.debug('Disabled')
 
       return
 

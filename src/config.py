@@ -42,7 +42,7 @@ DEFAULT_NUMBER_OF_CPUS = os.cpu_count()
 NUMBER_OF_CPUS = int(os.getenv('CPUS') or DEFAULT_NUMBER_OF_CPUS)
 
 ## Model
-T = 100 # number of steps
+T = 300 # number of steps
 TIMESTEP_EMBEDDING_DIMENTIONALITY = 32 # dimentionality of positional encodding of timesteps
 IMG_SIZE = 64
 IMG_CHANNELS = 3

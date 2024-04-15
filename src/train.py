@@ -76,6 +76,11 @@ def train(
     for batch, (images, labels) in enumerate(dataloader):
     # for batch, images in enumerate(dataloader):
 
+      # print(images)
+      # print(images.shape)
+      # print(images.min())
+      # print(images.max())
+
       # print('\n')
 
       # for p in model.parameters():
@@ -346,6 +351,9 @@ RUN=oeioy8sv \
 CPU=1 \
 DS=128 \
 BS=16 \
+
+
+WANDB=0 CPU=1 DS=1 BS=1 \
 torchrun \
 --nnodes=1 \
 --nproc_per_node=1 \

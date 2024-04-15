@@ -65,7 +65,8 @@ LEARNING_RATE = 0.001
 LOG_EVERY = 10
 
 # Data
-MAX_PROCESSES_PER_GPU = 4
+# MAX_PROCESSES_PER_GPU = 4
+MAX_PROCESSES_PER_GPU = 1
 
 # Anime Dataset
 # ANIME_DATASET_PATH = os.path.join('../data', 'anime.safetensors')

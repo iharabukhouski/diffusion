@@ -5,14 +5,14 @@ import os
 import time
 from functools import partial
 import torch
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from data import create_dataloader
 import config
 from logger import Logger
 from device import Device
-from model import UNet
+from model import UNet, UNet2
 from scheduler import images_to_images_with_noise_at_timesteps
 from checkpoints import Checkpoint
 from distributed import Distributed
@@ -61,10 +61,10 @@ def train(
 
   # with flop_counter:
 
-  # for p in model.parameters():
+  for p in model.parameters():
 
-  #   logger.info('INIT PRM', f'{p[0][0].item():.5f}')
-  #   logger.info('INIT GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+    logger.info('INIT PRM', f'{p[0][0].item():.5f}')
+    logger.info('INIT GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
   for epoch in range(config.NUMBER_OF_EPOCHS):
 
@@ -77,16 +77,16 @@ def train(
     # for batch, images in enumerate(dataloader):
 
       # print(images)
-      # print(images.shape)
-      # print(images.min())
-      # print(images.max())
+      print(images.shape)
+      print(images.min())
+      print(images.max())
 
-      # print('\n')
+      print('\n')
 
-      # for p in model.parameters():
+      for p in model.parameters():
 
-      #   logger.debug('1 PRM', f'{p[0][0].item():.5f}')
-      #   logger.debug('1 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+        logger.debug('1 PRM', f'{p[0][0].item():.5f}')
+        logger.debug('1 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
       compute_start = time.time()
 
@@ -118,25 +118,24 @@ def train(
 
         # ftdm.reset()
 
-      # for p in model.parameters():
+      for p in model.parameters():
 
-      #   logger.debug('2 PRM', f'{p[0][0].item():.5f}')
-      #   logger.debug('2 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+        logger.debug('2 PRM', f'{p[0][0].item():.5f}')
+        logger.debug('2 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
       loss.backward() # calculates .grad
 
-      # for p in model.parameters():
+      for p in model.parameters():
 
-      #   logger.debug('3 PRM', f'{p[0][0].item():.5f}')
-      #   logger.debug('3 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
-
+        logger.debug('3 PRM', f'{p[0][0].item():.5f}')
+        logger.debug('3 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
       optimizer.step() # updates params
 
-      # for p in model.parameters():
+      for p in model.parameters():
 
-      #   logger.debug('4 PRM', f'{p[0][0].item():.5f}')
-      #   logger.debug('4 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+        logger.debug('4 PRM', f'{p[0][0].item():.5f}')
+        logger.debug('4 GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
       run.log(
         {
@@ -157,10 +156,10 @@ def train(
 
       step += 1
 
-  # for p in model.parameters():
+  for p in model.parameters():
 
-  #   logger.info('FIN PRM', f'{p[0][0].item():.5f}')
-  #   logger.info('FIN GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
+    logger.info('FIN PRM', f'{p[0][0].item():.5f}')
+    logger.info('FIN GRD', f'{p.grad[0][0].item():.5f}' if p.grad is not None else None)
 
   return step, loss_number
 
@@ -244,10 +243,8 @@ def main():
     world_size,
   )
 
-  model = UNet()
-
-  # TODO: should be removed; needed for local cpu run
-  # model.to('cpu')
+  # model = UNet()
+  model = UNet2()
 
   device_ids = [ local_rank ] if device.is_cuda() else None
   output_device = local_rank if device.is_cuda() else None
@@ -271,7 +268,7 @@ def main():
   #   #   log_graph = True,
   #   # )
 
-  optimizer = Adam(
+  optimizer = SGD(
     model.parameters(),
     lr = config.LEARNING_RATE,
   )

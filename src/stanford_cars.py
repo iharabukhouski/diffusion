@@ -25,7 +25,7 @@ def create_dataset():
 
       # TODO: I am not sure why but this causes a crash "AttributeError: Can't pickle local object 'create_dataset.<locals>.<lambda>'"
       # transforms.Lambda(lambda t: (t * 2) - 1) # scale data to [-1, 1] 
-      transforms.Lambda(normalize)
+      transforms.Lambda(normalize),
     ]
   )
 

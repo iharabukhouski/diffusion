@@ -155,6 +155,8 @@ def x_to_PIL(
 
       transforms.Lambda(lambda t: t * 255.), # scale data to [0, 255]
       transforms.Lambda(lambda t: t.to(device.CPU).numpy().astype(np.uint8)), # convert from PyTorch tensors to Numpy Array
+      
+      # TODO: i can keep only this line and the first one
       transforms.ToPILImage(),
     ]
   )

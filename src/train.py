@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import os
-
 import time
 from functools import partial
 import torch
@@ -245,9 +244,6 @@ def main():
   )
 
   model = UNet()
-
-  # TODO: should be removed; needed for local cpu run
-  # model.to('cpu')
 
   device_ids = [ local_rank ] if device.is_cuda() else None
   output_device = local_rank if device.is_cuda() else None

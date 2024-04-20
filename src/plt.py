@@ -19,17 +19,34 @@ def plt_images(
     ),
   )
   plt.axis('off')
+  plt.title(f'T: {T}')
 
   num_images_to_display = 10
   stepsize = int(math.ceil(T / num_images_to_display))
 
-  for t in range (0, T):
+  for i in range(0, num_images_to_display):
+
+    # making sure that the first image is from t = 0
+    if i == 0:
+
+      t = 0
+
+    # making sure that the last image is from t = T
+    elif i == num_images_to_display - 1:
+
+      t = T - 1
+
+    else:
+
+      t = i * stepsize
 
     plt.subplot(
       1, # Number of rows
       num_images_to_display, # Number of columns
-      int(t / stepsize + 1) # Index
+      i + 1,
     )
+
+    plt.title(f't: {t}')
 
     image_PIL = x_to_PIL(images[t, 0])
 

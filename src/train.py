@@ -156,14 +156,9 @@ def train(
 
         images = sample_image(model)
 
-        # save_images(images)
-
-        as_PIL(images)
-
         run.log(
           {
-            'sample': wandb.Image(as_PIL(images)),
-            # 'sample': as_PIL(images),
+            'sample': as_PIL(images),
           },
           step = step,
         )

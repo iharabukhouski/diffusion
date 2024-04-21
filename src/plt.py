@@ -101,4 +101,6 @@ def as_PIL(
 
   image_buffer.close()
 
+  plt.close(fig)
+
   return wandb_image

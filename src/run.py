@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
 """
 
-RUN=rlxo32p9 \
+RUN=sfddjolb \
 ./run.py
 
 """

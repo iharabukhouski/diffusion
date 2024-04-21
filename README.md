@@ -161,3 +161,17 @@ LOG=I:CHECKPOINT:0
 sudo nvidia-smi -pl 450
 
 sudo nvidia-smi -q -d POWER
+
+---
+
+- attention
+- group normalization
+- change `IMG_SIZE, IMG_SIZE` -> `IMG_HEIGHT, IMG_WIDTH`
+- do not corrupt wandb run data when doing inference
+- make dataset permament on something like s3
+- save intermediate sample into a folder & wandb (during training)
+
+
+potential experiments
+- try l2 loss
+

@@ -1,0 +1,4 @@
+touch ~/.no_auto_tmux
+scp -P 40710 -pr ./data/stanford_cars.tar.gz root@38.126.65.109:/root/diffusion/stanford_cars.tar.gz
+pip3 install .
+tar -xzvf stanford_cars.tar.gz

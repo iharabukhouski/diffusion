@@ -48,13 +48,13 @@ def images_to_images_with_noise_at_timesteps(
   alphas = 1.0 - betas
   alphas_cumprod = torch.cumprod(alphas, axis = 0)
   alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.0)
-  sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
+  # sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
   sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
   sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-  posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+  # posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
   """
-  Takes an image and a timestep as input and return the noisy version of it
+  Takes an image and a timestep as input and return a noisy version of the image
   """
 
   # We sample noise from `normal` distribution

@@ -243,7 +243,7 @@ def print_model(
   logger.info(f'[MODEL] Parameters: {parameters:,}')
   logger.info(f'[MODEL] Parameters (MB): {(parameters * 4 / 1024 ** 2):.6}')
   logger.info('[MODEL] Device:', next(model.parameters()).device)
-  logger.info('[MODEL] Architecture:', model)
+  logger.debug('[MODEL] Architecture:', model)
 
 class UNet2(nn.Module):
 

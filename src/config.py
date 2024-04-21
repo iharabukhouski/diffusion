@@ -42,7 +42,8 @@ DEFAULT_NUMBER_OF_CPUS = os.cpu_count()
 NUMBER_OF_CPUS = int(os.getenv('CPUS') or DEFAULT_NUMBER_OF_CPUS)
 
 ## Model
-T = 300 # number of steps
+# T = 300 # number of steps
+T = 100 # number of steps
 TIMESTEP_EMBEDDING_DIMENTIONALITY = 32 # dimentionality of positional encodding of timesteps
 IMG_SIZE = 64
 IMG_CHANNELS = 3
@@ -62,7 +63,7 @@ NUMBER_OF_EPOCHS = int(os.getenv('EPOCHS') or DEFAULT_NUMBER_OF_EPOCHS)
 LEARNING_RATE = 0.001
 # LEARNING_RATE = 1
 
-LOG_EVERY = 10
+LOG_STEPS_FREQ = 10
 
 # Data
 # MAX_PROCESSES_PER_GPU = 4

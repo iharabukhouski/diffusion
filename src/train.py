@@ -366,7 +366,7 @@ DS=128 \
 BS=16 \
 
 
-WANDB=0 RUN=rlxo32p9 CPU=1 DS=11 BS=1 \
+WANDB=0 RUN=m46ycexn CPU=1 DS=11 BS=1 \
 torchrun \
 --nnodes=1 \
 --nproc_per_node=1 \

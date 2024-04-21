@@ -13,8 +13,10 @@ from logger import Logger
 from device import Device
 from model import UNet
 from scheduler import images_to_images_with_noise_at_timesteps
-from checkpoints import Checkpoint
+from checkpoints import Checkpoint, MODE
 from distributed import Distributed
+from plt import as_PIL
+from sampling import sample_image
 
 import wandb
 
@@ -148,9 +150,23 @@ def train(
 
       step_end = time.time()
 
-      if step % config.LOG_EVERY == 0:
+      if step % config.LOG_STEPS_FREQ == 0:
 
         logger.info(f'Step: {step:>4} | Epoch: {epoch:>4} | Batch: {batch:>4} | Loss: {loss_number:.4f} | Compute: {compute_end - compute_start:.4f}s | Step: {step_end - step_start:.4f}s')
+
+        images = sample_image(model)
+
+        # save_images(images)
+
+        as_PIL(images)
+
+        run.log(
+          {
+            'sample': wandb.Image(as_PIL(images)),
+            # 'sample': as_PIL(images),
+          },
+          step = step,
+        )
 
       step_start = time.time()
 
@@ -350,7 +366,7 @@ DS=128 \
 BS=16 \
 
 
-WANDB=0 CPU=1 DS=1 BS=1 \
+WANDB=0 RUN=rlxo32p9 CPU=1 DS=11 BS=1 \
 torchrun \
 --nnodes=1 \
 --nproc_per_node=1 \

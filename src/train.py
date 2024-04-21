@@ -227,6 +227,7 @@ def main():
     device,
     _run_id[global_rank],
     global_rank,
+    MODE.TRAIN,
   )
 
   if is_first_local_device():

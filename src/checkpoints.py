@@ -5,6 +5,9 @@ import wandb
 import config
 from collections import OrderedDict
 import re
+from enum import Enum
+
+MODE = Enum('Mode', ['TRAIN', 'EVAL'])
 
 # DDP checkpoint to Non-DDP checkpoint
 def ddp_checkpoint(
@@ -33,11 +36,14 @@ class Checkpoint:
     device,
     run_id,
     rank,
+    mode,
   ):
 
     self.logger = _logger('CHECKPOINT')
 
     self.disabled = not config.WANDB
+
+    self.mode = mode
 
     if self.disabled:
 
@@ -63,33 +69,39 @@ class Checkpoint:
         key = config.WANDB_API_KEY,
       )
 
-      self.run = wandb.init(
+      if self.mode == MODE.TRAIN:
 
-        project = config.WANDB_PROJECT,
+        self.run = wandb.init(
 
-        # group = config.WANDB_GROUP,
-        group = self.run_id,
+          project = config.WANDB_PROJECT,
 
-        # SEE: https://docs.wandb.ai/ref/python/init
-        # SEE: https://docs.wandb.ai/guides/runs/resuming
-        # id = config.WANDB_RUN_ID,
-        id = f'{self.run_id}_{rank}',
-        # resume = config.WANDB_RESUME,
-        resume = 'allow',
-        # name = config.WANDB_NAME,
-        name = f'{self.run_id}_{rank}',
+          # group = config.WANDB_GROUP,
+          group = self.run_id,
 
-        config = {
-          # Architecture
-          'T': config.T,
-          'IMG_SIZE': config.IMG_SIZE,
-          # Training
-          'LEARNING_RATE': config.LEARNING_RATE,
-          'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
-          'BATCH_SIZE': config.BATCH_SIZE,
-          'DATASET_SIZE': config.DATASET_SIZE,
-        },
-      )
+          # SEE: https://docs.wandb.ai/ref/python/init
+          # SEE: https://docs.wandb.ai/guides/runs/resuming
+          # id = config.WANDB_RUN_ID,
+          id = f'{self.run_id}_{rank}',
+          # resume = config.WANDB_RESUME,
+          resume = 'allow',
+          # name = config.WANDB_NAME,
+          name = f'{self.run_id}_{rank}',
+
+          config = {
+            # Architecture
+            'T': config.T,
+            'IMG_SIZE': config.IMG_SIZE,
+            # Training
+            'LEARNING_RATE': config.LEARNING_RATE,
+            'NUMBER_OF_EPOCHS': config.NUMBER_OF_EPOCHS,
+            'BATCH_SIZE': config.BATCH_SIZE,
+            'DATASET_SIZE': config.DATASET_SIZE,
+          },
+        )
+
+      else:
+
+        self.run = None
 
   def save_weights(
     self,
@@ -159,7 +171,7 @@ class Checkpoint:
   def download_checkpoint(
     self,
   ):
-    
+
     if not os.getenv('RUN'):
     # if not self.run_id:
 
@@ -176,18 +188,24 @@ class Checkpoint:
     self.logger.info('Downloading...')
 
     # checkpoint_filehandler = run.restore(config.CHECKPOINT_PATH)
+    # checkpoint_filehandler = wandb.restore(
     checkpoint_filehandler = wandb.restore(
       config.CHECKPOINT_PATH,
       # run_path: str | None = None,
       f'{config.WANDB_USERNAME}/{config.WANDB_PROJECT}/{self.run_id}_0',
       # replace: bool = False,
       # root: str | None = None
+
+      # NOTE: by default the file is downloaded to "run" folder if "wandb.init" was called. we do not want such behaviour
+      root = '.'
     )
 
-    shutil.copyfile(
-      checkpoint_filehandler.name,
-      config.CHECKPOINT_PATH,
-    )
+    # self.checkpoint_path = checkpoint_filehandler.name
+
+    # shutil.copyfile(
+    #   checkpoint_filehandler.name,
+    #   config.CHECKPOINT_PATH,
+    # )
 
     # self.logger.info('Path', checkpoint_filehandler.name)
 
@@ -213,7 +231,7 @@ class Checkpoint:
 
       return default_step
 
-    if not self.run.resumed:
+    if self.mode == MODE.TRAIN and not self.run.resumed:
 
       self.logger.info('No Checkpoint')
 

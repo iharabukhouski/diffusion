@@ -130,6 +130,7 @@ def main():
     device,
     run_id,
     rank,
+    MODE.EVAL,
   )
 
   run.download_checkpoint()

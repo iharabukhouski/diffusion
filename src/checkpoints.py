@@ -261,8 +261,8 @@ class Checkpoint:
 
       self.logger.info('Optimizer Restored')
 
-    self.logger.info('Step', checkpoint['step'])
-    self.logger.info('Loss', checkpoint['loss'])
+    self.logger.info(f'Step: {checkpoint['step']}')
+    self.logger.info(f'Loss: {checkpoint['loss']:.4f}')
 
     return checkpoint['step']
 

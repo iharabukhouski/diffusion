@@ -1,4 +1,4 @@
 touch ~/.no_auto_tmux
-scp -P 62797 -pr ./data/anime.tar.gz root@130.250.178.211:/root/diffusion/anime.tar.gz
+scp -P 62797 -pr ./data/anime.tar.gz root@24.2.58.27:/root/diffusion/anime.tar.gz
 pip3 install .
 tar -xzvf anime.tar.gz

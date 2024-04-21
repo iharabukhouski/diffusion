@@ -4,7 +4,7 @@ import os
 import time
 from functools import partial
 import torch
-from torch.optim import Adam
+from torch.optim import Adam, StepLR
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from data import create_dataloader
@@ -152,6 +152,8 @@ def train(
 
       if step % config.LOG_STEPS_FREQ == 0:
 
+        # lr = scheduler.get_last_lr()
+
         logger.info(f'Step: {step:>4} | Epoch: {epoch:>4} | Batch: {batch:>4} | Loss: {loss_number:.4f} | Compute: {compute_end - compute_start:.4f}s | Step: {step_end - step_start:.4f}s')
 
         images = sample_image(model)
@@ -283,6 +285,8 @@ def main():
     model.parameters(),
     lr = config.LEARNING_RATE,
   )
+
+  # scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
 
   step = checkpoint.load_weights(
     model,

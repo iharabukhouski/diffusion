@@ -7,6 +7,7 @@
 
 [Denoising Diffusion Probabilistic Models](https://arxiv.org/pdf/2006.11239.pdf) - original paper
 [Diffusion Models Beat GANs on Image Synthesis](https://arxiv.org/pdf/2105.05233.pdf) - improved version by OpenAI
+[Scalable Diffusion Models with Transformers](https://arxiv.org/pdf/2212.09748.pdf)
 
 # Architecture
 
@@ -45,6 +46,8 @@
     - Final Projection
 
 # Vocabulary
+
+- DiT - Diffusion Transformers
 
 # Links
 

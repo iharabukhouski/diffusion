@@ -39,7 +39,10 @@ def main():
     ddp = False,
   )
 
-  model.eval()
+  # TODO: `eval` - causes issues with BatchNorm during inference
+  # it is related to `track_runing_stats`
+  # https://discuss.pytorch.org/t/performance-highly-degraded-when-eval-is-activated-in-the-test-phase/3323/78
+  # model.eval()
 
   images = sample_image(model)
 

@@ -1,0 +1,2 @@
+- spatial self-attention blocks at lower resolutions
+- adaptive normalization layers to inject conditional information and channel counts for convolutional layers

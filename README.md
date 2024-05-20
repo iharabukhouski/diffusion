@@ -183,3 +183,103 @@ potential experiments
   fig, fig_ax = plt.subplots(
 
 ---
+
+[2024-04-21 17:01:46,634] torch.distributed.run: [WARNING] 
+[2024-04-21 17:01:46,634] torch.distributed.run: [WARNING] *****************************************
+[2024-04-21 17:01:46,634] torch.distributed.run: [WARNING] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+[2024-04-21 17:01:46,634] torch.distributed.run: [WARNING] *****************************************
+
+---
+
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+[W CudaIPCTypes.cpp:16] Producer process has been terminated before all shared CUDA tensors released. See Note [Sharing CUDA tensors]
+
+---
+
+to get max numbe of threads you can create
+
+cat /proc/sys/kernel/threads-max
+
+---
+
+- all reduce
+- all gather
+- scatter
+- etc.
+
+---
+
+topology
+
+nvidia-smi topo -m
+
+---
+
+https://medium.com/polo-club-of-data-science/how-to-measure-inter-gpu-connection-speed-single-node-3d122acb93f8
+
+root@C.10630955:~/cuda-samples/bin/x86_64/linux/release$ ./p2pBandwidthLatencyTest
+[P2P (Peer-to-Peer) GPU Bandwidth Latency Test]
+Device: 0, NVIDIA GeForce RTX 4090, pciBusID: 81, pciDeviceID: 0, pciDomainID:0
+Device: 1, NVIDIA GeForce RTX 4090, pciBusID: c1, pciDeviceID: 0, pciDomainID:0
+Device=0 CANNOT Access Peer Device=1
+Device=1 CANNOT Access Peer Device=0
+
+***NOTE: In case a device doesn't have P2P access to other one, it falls back to normal memcopy procedure.
+So you can see lesser Bandwidth (GB/s) and unstable Latency (us) in those cases.
+
+P2P Connectivity Matrix
+     D\D     0     1
+     0       1     0
+     1       0     1
+Unidirectional P2P=Disabled Bandwidth Matrix (GB/s)
+   D\D     0      1 
+     0 909.49  21.73 
+     1  22.61 921.83 
+Unidirectional P2P=Enabled Bandwidth (P2P Writes) Matrix (GB/s)
+   D\D     0      1 
+     0 902.14  20.91 
+     1  22.36 922.92 
+Bidirectional P2P=Disabled Bandwidth Matrix (GB/s)
+   D\D     0      1 
+     0 918.48  29.84 
+     1  28.81 924.56 
+Bidirectional P2P=Enabled Bandwidth Matrix (GB/s)
+   D\D     0      1 
+     0 918.22  29.73 
+     1  28.90 924.20 
+P2P=Disabled Latency Matrix (us)
+   GPU     0      1 
+     0   1.33  12.84 
+     1  11.44   1.31 
+
+   CPU     0      1 
+     0   2.51   8.12 
+     1   7.88   2.47 
+P2P=Enabled Latency (P2P Writes) Matrix (us)
+   GPU     0      1 
+     0   1.33  13.10 
+     1  11.59   1.30 
+
+   CPU     0      1 
+     0   2.53   7.94 
+     1   7.94   2.45 
+
+NOTE: The CUDA Samples are not meant for performance measurements. Results may vary when GPU Boost is enabled.
+
+---
+
+how to get information about cpu
+
+lscpu
+
+---
+
+- Group Norm
+- Batch Norm
+- Attention
